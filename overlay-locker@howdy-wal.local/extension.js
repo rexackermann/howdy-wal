@@ -47,47 +47,50 @@ export default class HowdyWalOverlayExtension {
     ShowLock() {
         if (this._isLocked) return true;
 
-        // Create the full-screen overlay (covers all monitors bounding box)
-        this._overlay = new St.Widget({
-            name: 'howdy-wal-overlay',
-            style: 'background-color: #000000;',
-            reactive: true,
-            can_focus: true,
-            x: 0,
-            y: 0,
-            width: global.screen_width,
-            height: global.screen_height,
-        });
+        try {
+            this._overlay = new St.Widget({
+                name: 'howdy-wal-overlay',
+                style: 'background-color: #000000;',
+                reactive: true,
+                can_focus: true,
+                x: 0,
+                y: 0,
+                width: global.screen_width,
+                height: global.screen_height,
+            });
 
-        // Add to the highest possible layer in Shell UI
-        Main.layoutManager.addChrome(this._overlay, {
-            affectsInputRegion: true,
-            trackFullscreen: true,
-        });
+            Main.layoutManager.addChrome(this._overlay, {
+                affectsInputRegion: true,
+                trackFullscreen: true,
+            });
 
-        if (Main.pushModal(this._overlay)) {
-            this._isLocked = true;
-            this._setupInputMonitoring();
-            this._createStatusLabel();
-            return true;
-        } else {
+            if (Main.pushModal(this._overlay)) {
+                this._isLocked = true;
+                this._setupInputMonitoring();
+                this._createStatusLabel();
+                return true;
+            } else {
+                this._cleanup();
+                return false;
+            }
+        } catch (e) {
+            logError(e, 'HowdyWalOverlay: Failed to show lock');
             this._cleanup();
             return false;
         }
     }
 
     _createStatusLabel() {
+        if (!this._overlay) return;
         this._statusLabel = new St.Label({
             text: 'HOWDY-WAL SECURED',
-            style: 'font-family: monospace; font-size: 14px; color: #004400;',
-            opacity: 100,
+            style: 'font-family: monospace; font-size: 14px; color: #002200;',
         });
 
-        // Place in bottom right of primary monitor
         let monitor = Main.layoutManager.primaryMonitor;
         this._statusLabel.set_position(
-            monitor.x + monitor.width - 200,
-            monitor.y + monitor.height - 30
+            monitor.x + monitor.width - 250,
+            monitor.y + monitor.height - 40
         );
 
         this._overlay.add_child(this._statusLabel);
@@ -98,45 +101,47 @@ export default class HowdyWalOverlayExtension {
         this._statusLabel.set_text('SCANNING FACE...');
         this._statusLabel.set_style('font-family: monospace; font-size: 20px; color: #00FF00; font-weight: bold;');
 
-        // Center for visibility during scan
         let monitor = Main.layoutManager.primaryMonitor;
         this._statusLabel.set_position(
-            monitor.x + (monitor.width - this._statusLabel.width) / 2,
-            monitor.y + monitor.height - 100
+            monitor.x + (monitor.width - 200) / 2,
+            monitor.y + monitor.height - 150
         );
     }
 
     ShowPasswordPrompt() {
         if (!this._isLocked || this._entry) return false;
 
-        // Update status
-        if (this._statusLabel) {
-            this._statusLabel.set_text('FACE UNKNOWN. ENTER PASSWORD:');
-            this._statusLabel.set_style('font-family: monospace; font-size: 16px; color: #FF0000;');
+        try {
+            if (this._statusLabel) {
+                this._statusLabel.set_text('FACE UNKNOWN. ENTER PASSWORD:');
+                this._statusLabel.set_style('font-family: monospace; font-size: 16px; color: #FF0000;');
+            }
+
+            this._entry = new St.Entry({
+                style: 'font-size: 24px; padding: 10px; width: 400px; color: #00FF00; background-color: #111; border: 2px solid #00FF00; border-radius: 5px;',
+                hint_text: 'Password...',
+                can_focus: true,
+            });
+
+            let monitor = Main.layoutManager.primaryMonitor;
+            this._entry.set_position(
+                monitor.x + (monitor.width - 400) / 2,
+                monitor.y + (monitor.height - 50) / 2
+            );
+
+            this._overlay.add_child(this._entry);
+            this._entry.grab_focus();
+
+            this._entry.clutter_text.connect('activate', () => {
+                let password = this._entry.get_text();
+                this._dbusImpl.emit_signal('PasswordSubmitted', GLib.Variant.new('(s)', [password]));
+                this._entry.set_text('');
+            });
+            return true;
+        } catch (e) {
+            logError(e, 'HowdyWalOverlay: Failed to show password prompt');
+            return false;
         }
-
-        this._entry = new St.Entry({
-            style: 'font-size: 24px; padding: 10px; width: 400px; color: #00FF00; background-color: #111; border: 2px solid #00FF00; border-radius: 5px;',
-            hint_text: 'Password...',
-            can_focus: true,
-        });
-
-        let monitor = Main.layoutManager.primaryMonitor;
-        this._entry.set_position(
-            monitor.x + (monitor.width - 400) / 2,
-            monitor.y + (monitor.height - 50) / 2
-        );
-
-        this._overlay.add_child(this._entry);
-        this._entry.grab_focus();
-
-        this._entry.clutter_text.connect('activate', () => {
-            let password = this._entry.get_text();
-            this._dbusImpl.emit_signal('PasswordSubmitted', GLib.Variant.new('(s)', [password]));
-            this._entry.set_text(''); // Clear for security
-        });
-
-        return true;
     }
 
     HideLock() {
@@ -145,10 +150,10 @@ export default class HowdyWalOverlayExtension {
     }
 
     _setupInputMonitoring() {
+        if (!this._overlay) return;
         this._eventId = this._overlay.connect('event', (actor, event) => {
             let type = event.type();
 
-            // EMERGENCY BYPASS: Triple-Escape in 1 second
             if (type === Clutter.EventType.KEY_PRESS && event.get_key_symbol() === Clutter.KEY_Escape) {
                 let now = Date.now();
                 if (now - this._lastEscapeTime < 1000) {
@@ -179,23 +184,36 @@ export default class HowdyWalOverlayExtension {
     }
 
     _cleanup() {
-        if (this._overlay) {
-            if (this._isLocked) {
-                Main.popModal(this._overlay);
+        // Broad try-catch to ensure we don't get stuck in modal state
+        try {
+            if (this._isLocked && this._overlay) {
+                try {
+                    Main.popModal(this._overlay);
+                } catch (e) {
+                    logError(e, 'HowdyWalOverlay: Main.popModal failed');
+                }
             }
+
+            this._isLocked = false;
+            this._escapeCount = 0;
+
             if (this._entry) {
-                this._entry.destroy();
+                try { this._entry.destroy(); } catch (e) { }
                 this._entry = null;
             }
+
             if (this._statusLabel) {
-                this._statusLabel.destroy();
+                try { this._statusLabel.destroy(); } catch (e) { }
                 this._statusLabel = null;
             }
-            Main.layoutManager.removeChrome(this._overlay);
-            this._overlay.destroy();
-            this._overlay = null;
+
+            if (this._overlay) {
+                try { Main.layoutManager.removeChrome(this._overlay); } catch (e) { }
+                try { this._overlay.destroy(); } catch (e) { }
+                this._overlay = null;
+            }
+        } catch (e) {
+            logError(e, 'HowdyWalOverlay: Fatal error in _cleanup');
         }
-        this._isLocked = false;
-        this._escapeCount = 0;
     }
 }

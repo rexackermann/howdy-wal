@@ -16,6 +16,15 @@ else
     exit 1
 fi
 
+# --- ATOMIC LOCK CHECK ---
+# Prevent multiple instances of the orchestrator from running simultaneously.
+LOCK_FILE_INST="/tmp/howdy_wal_orchestrator.lock"
+exec 200>$LOCK_FILE_INST
+if ! flock -n 200; then
+    echo "Check failed: Another lock orchestrator is already running."
+    exit 0
+fi
+
 # D-Bus Configuration
 DBUS_DEST="org.gnome.Shell"
 DBUS_PATH="/org/gnome/Shell/Extensions/HowdyWalOverlay"
@@ -38,13 +47,24 @@ log_event() {
 # --- UNLOCK FUNCTION ---
 unlock_session() {
     log_event "INFO" "Releasing Overlay..."
+    # Notify extension to clear screen
     gdbus call --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" --method "$DBUS_IFACE.HideLock" > /dev/null
     log_event "SUCCESS" "Session Unlocked."
+    
+    # Disable trap before manual exit to prevent recursion
+    trap - EXIT
     exit 0
 }
 
-# ENSURE CLEAN EXIT: If script is killed, release the shield!
-trap unlock_session SIGINT SIGTERM EXIT
+# --- EMERGENCY CLEANUP ---
+emergency_exit() {
+    log_event "WARN" "Script interrupted or emergency exit triggered."
+    gdbus call --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" --method "$DBUS_IFACE.HideLock" > /dev/null
+    exit 1
+}
+
+# Trap signals for cleanup
+trap emergency_exit SIGINT SIGTERM EXIT
 
 # --- LOCK TRIGGER ---
 log_event "INFO" "Requesting GNOME Shell Overlay Lock..."
@@ -77,7 +97,6 @@ gdbus monitor --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" | while r
             log_event "WARN" "Face scan failed. Requesting Password Prompt..."
             gdbus call --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" --method "$DBUS_IFACE.ShowPasswordPrompt" > /dev/null
         fi
-        # Note: We stay in AUTH_IN_PROGRESS=true while password prompt is up
     fi
 
     # 2. Handle Password Submission
@@ -98,5 +117,4 @@ gdbus monitor --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" | while r
             gdbus call --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" --method "$DBUS_IFACE.ShowPasswordPrompt" > /dev/null
         fi
     fi
-
 done

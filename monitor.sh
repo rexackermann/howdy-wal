@@ -2,8 +2,7 @@
 ###############################################################################
 #             Howdy-WAL - System Idle Monitor Daemon (V2)                #
 # --------------------------------------------------------------------------- #
-# This version is "Shield-Aware" and avoids overlapping with GNOME's native   #
-# lock screen.                                                                #
+# Watches for system idleness and triggers the overlay lock.                  #
 ###############################################################################
 
 # Determine script location and load central configuration
@@ -29,7 +28,6 @@ get_idle_time() {
 }
 
 is_native_lock_active() {
-    # Check if GNOME's native ScreenShield is currently active
     local status
     status=$(gdbus call --session --dest org.gnome.ScreenSaver --object-path /org/gnome/ScreenSaver --method org.gnome.ScreenSaver.GetActive 2>/dev/null)
     if [[ "$status" == "(true,)" ]]; then
@@ -57,7 +55,6 @@ while true; do
     fi
 
     # 2. Native ScreenShield Check
-    # If the system is already locked by GDM/GNOME, don't overlap.
     if is_native_lock_active; then
         sleep 10
         continue
@@ -73,26 +70,26 @@ while true; do
 
     # 4. Idle Check
     IDLE_MS=$(get_idle_time)
-    if [ -z "$IDLE_MS" ]; then
+    if [ -z "$IDLE_MS" ] || [ "$IDLE_MS" -lt 0 ]; then
         sleep 5
         continue
     fi
 
     # 5. Lock Decision
     if [ "$IDLE_MS" -gt "$IDLE_THRESHOLD_MS" ]; then
-        # Precise process check
-        if ! pgrep -x "lock.sh" >/dev/null; then
+        # Use -f for scripts to ensure correct matching
+        if ! pgrep -f "$LOCK_SCRIPT" >/dev/null; then
             log_event "TRIGGER" "Idle limit reached ($IDLE_MS ms)."
             
-            # Pre-lock check: Is the user still there?
+            # Pre-lock check
             if ! "$HOWDY_WRAPPER_SCRIPT" >/dev/null 2>&1; then
                 log_event "LOCK" "User absent. Activating Overlay."
                 "$LOCK_SCRIPT"
                 log_event "RESUME" "Unlocked. Grace period ($UNLOCK_GRACE_PERIOD s)."
                 sleep "$UNLOCK_GRACE_PERIOD"
             else
-                log_event "INFO" "User present at desk. Extending idle..."
-                sleep 30
+                log_event "INFO" "User present. Extending idle..."
+                sleep 60
             fi
         fi
     fi
