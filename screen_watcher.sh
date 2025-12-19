@@ -25,20 +25,61 @@ get_idle_time() {
                | awk -F' ' '{print $2}' | tr -cd '0-9'
 }
 
+# --- MEDIA DETECTION LOGIC ---
+
+# Check if audio is currently being played.
+# Returns 0 if audio is detected, 1 otherwise.
+is_audio_playing() {
+    local status
+    if [ "$ONLY_RUNNING_AUDIO" = true ]; then
+        # Check specifically for sink inputs with state 'RUNNING'
+        status=$(pactl list sink-inputs 2>/dev/null | grep -c "state: RUNNING")
+    else
+        # Check for any active sink inputs
+        status=$(pactl list sink-inputs 2>/dev/null | grep -c "sink-input")
+    fi
+    
+    [ "$status" -gt 0 ] && return 0 || return 1
+}
+
+# Check if GNOME session is inhibiting idle.
+# Returns 0 if inhibited, 1 otherwise.
+is_idle_inhibited() {
+    local inhibited
+    inhibited=$(gdbus call --session \
+                           --dest org.gnome.SessionManager \
+                           --object-path /org/gnome/SessionManager \
+                           --method org.gnome.SessionManager.IsInhibited 8 2>/dev/null \
+                           | grep -o "true" | wc -l)
+    
+    [ "$inhibited" -gt 0 ] && return 0 || return 1
+}
+
 echo -e "\e[1;36m[ DAEMON ]\e[0m Howdy-WAL Monitor starting up..."
 
 # --- MAIN MONITORING LOOP ---
 while true; do
     # 1. Caffeine Check
-    # If the caffeine file exists, we effectively ignore idle triggers.
     if [ -f "$CAFFEINE_FILE" ]; then
-        # Heartbeat for debugging
-        # echo "Caffeine active. Skipping check..."
         sleep 10
         continue
     fi
 
-    # 2. Get current system idle time (milliseconds)
+    # 2. Smart Media Logic
+    if [ "$SMART_MEDIA" = true ]; then
+        if is_audio_playing; then
+            if is_idle_inhibited; then
+                # Media is playing AND something is inhibiting idle (Foreground Video/Presentation)
+                # We do NOT lock.
+                sleep 5
+                continue
+            fi
+            # Note: If audio is playing but NOT inhibited, it's "Background Audio" (Spotify, etc)
+            # In this case, we CONTINUE to the idle check and may lock.
+        fi
+    fi
+
+    # 3. Get current system idle time (milliseconds)
     IDLE_MS=$(get_idle_time)
     
     # Handle environment issues (e.g. D-Bus not ready)

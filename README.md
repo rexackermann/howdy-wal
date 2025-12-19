@@ -15,6 +15,7 @@ A hardened, terminal-based biometric lockscreen for GNOME/Wayland. This project 
 - **🚀 Biometric Security**: Seamless unlocking via `howdy` facial recognition.
 - **🔒 Hardened TTY Locking**: Switches session to TTY 9, rendering standard desktop bypasses useless.
 - **🛡️ Fail-Closed Design**: If the lock UI crashes or is killed, it automatically respawns. Access to the desktop is only granted upon successful authentication.
+- **🎬 Smart Media Detection**: Intelligently detects foreground video/media (via D-Bus inhibitors) and prevents locking, while still allowing background music (like Spotify) to follow your idle policy.
 - **📟 Interchangeable Visuals**: Use `tmatrix`, `cmatrix`, `bonsai`, or any CLI tool as your screensaver.
 - **☕ Caffeine Mode**: Quickly pause auto-locking for movie nights or presentations.
 - **⌨️ Interactive Fallback**: Secure password entry via PAM if face verification fails.
@@ -67,6 +68,7 @@ All settings are centralized in `/opt/howdy-WAL/config.sh`.
 | Variable | Description | Default |
 | :--- | :--- | :--- |
 | `IDLE_THRESHOLD_MS` | Inactivity before locking | `10000` (10s) |
+| `SMART_MEDIA` | Prevent lock for foreground video | `true` |
 | `VISUAL_ENGINE` | Command for screensaver | `tmatrix` |
 | `LOCK_VT` | TTY used for the lock | `9` |
 | `MENU_TIMEOUT` | Menu wait time | `10`s |

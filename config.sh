@@ -15,6 +15,14 @@ INSTALL_DIR="/opt/howdy-WAL"
 # Idle time in milliseconds before triggering the lock (10000 = 10s)
 IDLE_THRESHOLD_MS=10000
 
+# SMART MEDIA: If true, will not lock if video/media is in the foreground.
+# Uses a heuristic: Audio playing + Active Idle Inhibitor = Foreground Media.
+SMART_MEDIA=true
+
+# IGNORE PHANTOM AUDIO: Some apps keep audio streams open while paused.
+# If true, only RUNNING audio streams prevent locking.
+ONLY_RUNNING_AUDIO=true
+
 # Grace period (seconds) after unlocking before the monitor resumes checking
 # This prevents immediate re-locking if the system hasn't registered activity yet.
 UNLOCK_GRACE_PERIOD=30
