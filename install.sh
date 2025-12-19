@@ -80,10 +80,12 @@ fi
 # Verify Howdy setup
 echo -e "${BLUE}[ TESTING ]${NC} Please look at the camera for a quick verification test..."
 if ! pamtester faceauth "$CURRENT_USER" authenticate; then
-    echo -e "${YELLOW}Warning: Basic face verification failed.${NC}"
-    echo "Make sure Howdy is trained and working before relying on this lockscreen."
+    echo -e "${RED}CRITICAL ERROR: Howdy authentication failed.${NC}"
+    echo "Howdy must be configured and trained for user '$CURRENT_USER' before installing."
+    echo "Check 'howdy test' and ensure your camera is working."
+    exit 1
 else
-    echo -e "  ${GREEN}✓${NC} Verification successful."
+    echo -e "  ${GREEN}✓${NC} Face verification successful."
 fi
 
 # 5. Sudoers Integration
