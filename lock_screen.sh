@@ -100,6 +100,11 @@ while true; do
     # TTY collisions can cause openvt to return 8 even if the child succeeded.
     if [ -f "$AUTH_SUCCESS_FILE" ] || [ $EXIT_CODE -eq 0 ]; then
         log_event "SUCCESS" "Authentication verified (SuccessFile: $([ -f "$AUTH_SUCCESS_FILE" ] && echo "YES" || echo "NO")). Breaking loop."
+ 
+        # PROACTIVE: Trigger Bluetooth restoration in background while we switch back.
+        if [ -x "$BLUETOOTH_RECONNECT_SCRIPT" ]; then
+             sudo -u "$TARGET_USER" "$BLUETOOTH_RECONNECT_SCRIPT" restore >/dev/null 2>&1 &
+        fi
         rm -f "$AUTH_SUCCESS_FILE" 2>/dev/null
         break
     else

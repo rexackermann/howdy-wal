@@ -22,7 +22,7 @@ echo -e "${BLUE}┗━━━━━━━━━━━━━━━━━━━━�
 
 # 1. Dependency Check
 echo -e "\n${YELLOW}[ 1/6 ] Checking Dependencies...${NC}"
-DEPENDENCIES=("howdy" "pamtester" "tmatrix" "gdbus" "openvt" "fgconsole" "sed" "awk" "jq")
+DEPENDENCIES=("howdy" "pamtester" "tmatrix" "gdbus" "openvt" "fgconsole" "sed" "awk" "jq" "libinput")
 for dep in "${DEPENDENCIES[@]}"; do
     if ! command -v "$dep" &> /dev/null; then
         echo -e "${RED}Error: Dependency '$dep' not found.${NC}"

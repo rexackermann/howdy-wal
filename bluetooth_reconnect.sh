@@ -17,7 +17,7 @@ restore_state() {
         while read -r mac; do
             if [ -n "$mac" ]; then
                 echo "Attempting to reconnect Bluetooth device: $mac"
-                bluetoothctl connect "$mac" >/dev/null 2>&1 &
+                sleep 5 && bluetoothctl connect "$mac" >/dev/null 2>&1 &
             fi
         done < "$STATE_FILE"
         rm -f "$STATE_FILE"

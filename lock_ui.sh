@@ -84,7 +84,7 @@ while true; do
     # Launch libinput monitor in background
     # It waits for the first real interaction event (motion, click, touch, key).
     (
-        libinput debug-events 2>/dev/null | grep -E "POINTER_|TOUCH_|KEYBOARD_KEY|GESTURE_" | read -r line
+        libinput debug-events 2>/dev/null | grep --line-buffered -E "POINTER_|TOUCH_|KEYBOARD_|GESTURE_|TABLET_" | head -n 1 > /dev/null
         # When an event happens, kill the visual engine to trigger auth
         if kill -0 "$VE_PID" 2>/dev/null; then
             kill "$VE_PID" 2>/dev/null

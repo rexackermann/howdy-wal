@@ -12,7 +12,7 @@ Howdy-WAL (Wait-And-Lock) is a high-performance terminal visual engine lockscree
 ## ✨ Features
 
 - **🎧 BT Preservation**: Persistent Bluetooth connections via WirePlumber policy and automatic reconnection helper.
-- **👆 Multi-Input Unlock**: Press **any key**, touch the **touchscreen**, or swipe the **touchpad** to trigger biometric verification.
+- **👆 Universal Input Wake**: Instant wake on **mouse movement**, **clicks**, **touchpad swipes**, **touchscreen taps**, or any **key press**.
 - **🚀 Biometric Security**: Seamless unlocking via `howdy` facial recognition mapping.
 - **🔒 Hardened TTY Locking**: Switches to TTY 9, rendering desktop-level bypasses useless.
 - **🛡️ Fail-Closed Design**: Automatic respawn on crash. Access is only possible via valid authentication.
@@ -74,7 +74,7 @@ Tunable settings are centralized in `/opt/howdy-WAL/config.sh`.
 - **View Logs**: `tail -f /var/log/howdy-wal.log`
 
 ### Unlock Flow
-- **Press Any Key**: Stops the screensaver and triggers the camera.
+- **Interaction**: Move the mouse, swipe the touchpad, or press any key to stop the screensaver and trigger the camera.
 - **Biometric Fail**: An interactive menu will appear allowing **[P]assword** or **[R]etry**.
 
 ---
