@@ -82,6 +82,10 @@ VISUAL_ENGINE_ARGS="-s 60 -C green"
 # --- INTERNAL PATHS ---
 # Usually these do not need modification once installed.
 LOG_FILE="/var/log/howdy-wal.log"
+VERBOSE=true
+
+# Communication file to bypass unreliable TTY exit codes
+AUTH_SUCCESS_FILE="/tmp/howdy_auth_success"
 
 LOCK_LAUNCHER_SCRIPT="$INSTALL_DIR/lock_screen.sh"
 LOCK_UI_SCRIPT="$INSTALL_DIR/lock_ui.sh"

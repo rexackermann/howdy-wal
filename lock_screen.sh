@@ -70,31 +70,46 @@ trap "kill $STIKCY_PID 2>/dev/null; exit" EXIT
 # If it exits with 0, it means authentication was successful.
 # If it exits with anything else, it probably crashed, so we restart it.
 # --- FAIL-CLOSED LAUNCH LOOP ---
-# We use openvt -w (wait) to block until the UI script exits.
+# We use a success file to bypass TTY-specific exit code mangling.
+rm -f "$AUTH_SUCCESS_FILE" 2>/dev/null
+
 while true; do
-    # Ensure log file exists and is globally writable (Persistent Fix)
+    # Ensure log file exists and is globally writable
     if [ ! -f "$LOG_FILE" ]; then
         sudo touch "$LOG_FILE" 2>/dev/null
         sudo chmod 666 "$LOG_FILE" 2>/dev/null
     fi
 
-    # CRITICAL: If a previous attempt crashed, the TTY might be stuck.
-    # Code 8 usually means the VT is still 'held' by an orphaned process.
-    # We explicitly deallocate AND try to clear the state.
-    deallocvt "$LOCK_VT" 2>/dev/null || true
-    disown -a 2>/dev/null # Attempt to release any held resources
+    log_event "DEBUG" "CLEANUP: Deallocating VT $LOCK_VT..."
+    # If deallocvt fails, it's often because the VT is current.
+    deallocvt "$LOCK_VT" 2>/dev/null || log_event "DEBUG" "VT $LOCK_VT in use or already active. Continuing..."
 
     log_event "INFO" "Launching Lock UI on TTY $LOCK_VT..."
     
     # openvt -w waits for the command to finish.
+    # We force TTY allocation and switch to ensure focus.
     openvt -c "$LOCK_VT" -s -f -w -- env TERM=linux "$LOCK_UI_SCRIPT"
     EXIT_CODE=$?
     
-    if [ $EXIT_CODE -eq 0 ]; then
-        log_event "SUCCESS" "Authentication verified. Breaking loop."
+    log_event "DEBUG" "openvt finished. Exit code: $EXIT_CODE"
+
+    # CRITICAL: We prioritize the SUCCESS_FILE over the openvt exit code.
+    # TTY collisions can cause openvt to return 8 even if the child succeeded.
+    if [ -f "$AUTH_SUCCESS_FILE" ] || [ $EXIT_CODE -eq 0 ]; then
+        log_event "SUCCESS" "Authentication verified (SuccessFile: $([ -f "$AUTH_SUCCESS_FILE" ] && echo "YES" || echo "NO")). Breaking loop."
+        rm -f "$AUTH_SUCCESS_FILE" 2>/dev/null
         break
     else
-        log_event "ERROR" "Lock UI exited with Code $EXIT_CODE. Respawning in 1s..."
+        log_event "ERROR" "Authentication failed or UI crashed. Exit Code $EXIT_CODE. Respawning in 1s..."
+        
+        # If we got Code 8 (Allocation failure), try switching back and forth to reset state
+        if [ $EXIT_CODE -eq 8 ]; then
+             log_event "DEBUG" "Attempting VT reset to clear TTY lock..."
+             chvt "$ORIG_VT"
+             sleep 0.5
+             chvt "$LOCK_VT"
+        fi
+        
         sleep 1
     fi
 done

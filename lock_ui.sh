@@ -99,7 +99,8 @@ while true; do
     log_event "INFO" "Triggering facial verification..."
     
     if "$HOWDY_WRAPPER_SCRIPT"; then
-        log_event "SUCCESS" "User verified via Howdy."
+        log_event "SUCCESS" "User verified via Howdy. Signaling success to launcher..."
+        touch "$AUTH_SUCCESS_FILE" 2>/dev/null
         exit 0
     fi
     
@@ -115,7 +116,8 @@ while true; do
     case "$choice" in
         p|P)
             if attempt_password_auth; then
-                log_event "SUCCESS" "User verified via Password."
+                log_event "SUCCESS" "User verified via Password. Signaling success..."
+                touch "$AUTH_SUCCESS_FILE" 2>/dev/null
                 exit 0
             fi
             ;;
