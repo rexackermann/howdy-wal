@@ -111,6 +111,6 @@ sudo ./uninstall.sh
 ---
 
 ## 📄 License
-Distributed under the **MIT License**. See `LICENSE` for more information.
+Distributed under the **MIT License**. See [LICENSE](./LICENSE) for more information.
 
 **Author:** Rex Ackermann
