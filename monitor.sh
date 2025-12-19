@@ -1,8 +1,9 @@
 #!/bin/bash
 ###############################################################################
-#             Howdy-WAL - System Idle Monitor Daemon (V2)                #
+#             Howdy-WAL - Smart Monitor for Native Locking                #
 # --------------------------------------------------------------------------- #
-# Watches for system idleness and triggers the overlay lock.                  #
+# This monitor watches for idleness and triggers the native GNOME lock        #
+# only if "Smart" conditions (Media, Caffeine, Face) are NOT met.             #
 ###############################################################################
 
 # Determine script location and load central configuration
@@ -10,7 +11,7 @@ SCRIPT_DIR="$( dirname "$( readlink -f "${BASH_SOURCE[0]}" )" )"
 if [ -f "$SCRIPT_DIR/config.sh" ]; then
     source "$SCRIPT_DIR/config.sh"
 else
-    echo "CRITICAL ERROR: config.sh not found in $SCRIPT_DIR"
+    echo "CRITICAL ERROR: config.sh not found."
     exit 1
 fi
 
@@ -45,7 +46,7 @@ log_event() {
 }
 
 cleanup_logs
-log_event "INFO" "Howdy-WAL Shield-Aware Monitor started."
+log_event "INFO" "Howdy-WAL Smart Monitor (Native) starting up..."
 
 while true; do
     # 1. Caffeine Check
@@ -55,12 +56,13 @@ while true; do
     fi
 
     # 2. Native ScreenShield Check
+    # If the system is already locked by the OS, don't do anything.
     if is_native_lock_active; then
-        sleep 10
+        sleep 15
         continue
     fi
 
-    # 3. Smart Media Logic
+    # 3. Smart Media Logic (Using V1 Focus Exporter)
     if [ "$SMART_MEDIA" = true ] && [ -f "$MEDIA_CHECK_SCRIPT" ]; then
         if "$MEDIA_CHECK_SCRIPT"; then
             sleep 5
@@ -68,29 +70,29 @@ while true; do
         fi
     fi
 
-    # 4. Idle Check
+    # 4. Idle Detection
     IDLE_MS=$(get_idle_time)
-    if [ -z "$IDLE_MS" ] || [ "$IDLE_MS" -lt 0 ]; then
+    if [ -z "$IDLE_MS" ]; then
         sleep 5
         continue
     fi
 
-    # 5. Lock Decision
+    # 5. Lock Decision Engine
     if [ "$IDLE_MS" -gt "$IDLE_THRESHOLD_MS" ]; then
-        # Use -f for scripts to ensure correct matching
-        if ! pgrep -f "$LOCK_SCRIPT" >/dev/null; then
-            log_event "TRIGGER" "Idle limit reached ($IDLE_MS ms)."
+        log_event "TRIGGER" "Idle threshold reached ($IDLE_MS ms). Checking presence..."
+        
+        # PROACTIVE BYPASS: Check if user is still sitting there
+        if ! "$HOWDY_WRAPPER_SCRIPT" >/dev/null 2>&1; then
+            log_event "LOCK" "Authentication Failed (User not found). Triggering Native Lock."
+            "$LOCK_SCRIPT"
             
-            # Pre-lock check
-            if ! "$HOWDY_WRAPPER_SCRIPT" >/dev/null 2>&1; then
-                log_event "LOCK" "User absent. Activating Overlay."
-                "$LOCK_SCRIPT"
-                log_event "RESUME" "Unlocked. Grace period ($UNLOCK_GRACE_PERIOD s)."
-                sleep "$UNLOCK_GRACE_PERIOD"
-            else
-                log_event "INFO" "User present. Extending idle..."
-                sleep 60
-            fi
+            # Wait for user to unlock and then hold off briefly
+            log_event "RESUME" "Session resumed. Entering grace period ($UNLOCK_GRACE_PERIOD s)."
+            sleep "$UNLOCK_GRACE_PERIOD"
+        else
+            log_event "INFO" "User detected. Skipping lock and extending idle period."
+            # Sleep a bit to avoid constant scanning if user is active but not moving mouse
+            sleep 30
         fi
     fi
 

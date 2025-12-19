@@ -1,63 +1,41 @@
-# 🛡️ Howdy-WAL
-### Hardened Session-Native Biometric Lockscreen for Linux
+# Howdy-WAL (Native Stability Edition) 🐺🚀
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Bash](https://img.shields.io/badge/Language-Bash-4EAA25.svg)](https://www.gnu.org/software/bash/)
-[![Security: Hardened](https://img.shields.io/badge/Security-Hardened-red.svg)](#features)
+**Howdy-WAL** is a "Smart" Walk-Away Lock system for GNOME that uses facial recognition (Howdy) and presence detection to keep your session secure without interfering with your work.
 
-Howdy-WAL is a high-performance biometric lockscreen secured by Howdy facial recognition. Unlike traditional lockscreens that switch TTYs, Howdy-WAL stays within your graphical session using a **Hardened Shell Overlay**, ensuring that Bluetooth audio, background media, and session state are never interrupted.
+## 🌟 Why the Native Edition?
+Early V2 versions used a custom Shell extension for locking. We have pivoted to a **Native Hybrid Architecture** to provide the absolute maximum stability.
+- **🛡️ Rock Solid**: Uses the standard GNOME lock screen (no "black box" extension bugs).
+- **🧠 The Brain**: A background monitor handles the "Smart" logic (Media detection, Caffeine).
+- **📸 Biometric Speed**: Proactively checks for your face *before* locking to prevent interruptions.
+- **🎵 Persistent Media/BT**: Keeps your Bluetooth and Audio alive by staying on the same session.
 
----
+## ✨ Core Features
+- **Smart Idle Detection**: Blocks locking if media (video/audio) is in the foreground.
+- **Howdy Integration**: Bio-bypass checks for your face before triggering the lock.
+- **Caffeine Mode**: Toggle a temporary "never-lock" state with a simple script.
+- **GDM Integration**: (Optional) Makes the native GNOME lock screen use Howdy instantly.
 
-## ✨ Features
+## 🚀 Installation
+1.  **Run the Installer**:
+    ```bash
+    ./install.sh
+    ```
+2.  **Enable the Support Extension**:
+    - Enable **"Focus Exporter"** in your GNOME Extension Manager.
+3.  **Active Biometrics (Recommended)**:
+    - This allows the standard GNOME lock screen to use Howdy:
+    ```bash
+    sudo /opt/howdy-WAL/integrate_pam.sh
+    ```
+4.  **Start the Daemon**:
+    ```bash
+    systemctl --user start howdy-WAL.service
+    ```
 
-- **🚀 Session-Native**: Zero Bluetooth disconnects or TTY switch delays. Audio stays 100% persistent.
-- **🛡️ Hardened Overlay**: A native GNOME Shell Extension draws a modal shield and grabs all input.
-- **👆 Universal Wake**: Instant wake on **mouse movement**, **clicks**, **touchpad swipes**, or any **key press**.
-- **🚀 Biometric Security**: Seamless unlocking via `howdy` facial recognition mapping.
-- **🎬 Smart Media Recognition**: Optionally blocks auto-locking for foreground video while allowing it for background audio.
-- **⌨️ Secure Fallback**: Matrix-styled native password entry box for when biometrics are unavailable.
-- **🆘 Emergency Bypass**: Rapid triple-press of the `Escape` key provides a fail-safe session recovery.
-
----
-
-## 🛠️ Installation
-
-### 1. Prerequisites
-Ensure `howdy` and `python3-pam` are installed.
-For Fedora users:
-```bash
-sudo dnf copr enable principis/howdy
-sudo dnf install howdy python3-pam zip gdbus
-```
-
-### 2. Guided Setup
-```bash
-git clone https://github.com/rexackermann/howdy-wal.git
-cd howdy-wal
-./install.sh
-```
-> [!IMPORTANT]
-> Because this uses a GNOME Shell Extension, you MUST **Log Out and Log Back In** after installation for the changes to take effect.
+## 🛠️ Essential Commands
+- **Lock Now**: `/opt/howdy-WAL/lock_now.sh`
+- **Toggle Caffeine**: `/opt/howdy-WAL/caffeine.sh`
+- **Check Logs**: `tail -f /var/log/howdy-wal.log`
 
 ---
-
-## 🖱️ Usage
-
-### Quick Commands
-- **Lock Now**: `/opt/howdy-WAL/lock.sh` (Bind this to a keyboard shortcut!)
-- **View Logs**: `tail -f /var/log/howdy-wal.log`
-
-### Unlock Flow
-- **Interaction**: Move the mouse, swipe the touchpad, or press any key to trigger the camera.
-- **Emergency Abort**: Press `Escape` 3 times rapidly if you need to bypass the lock manually.
-
----
-
-## 📄 License
-Distributed under the **MIT License**. Created by the Howdy-WAL Contributors.
-
----
-
-## 📦 Legacy Versions
-The original TTY-based implementation is preserved in the `version1/` directory for historical reference.
+*Created by Howdy-WAL Contributors. Licensed under MIT.*
