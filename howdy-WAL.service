@@ -1,11 +1,11 @@
 [Unit]
-Description=Howdy-WAL V2 Monitor
+Description=Howdy-WAL Monitor
 After=graphical-session.target
 
 [Service]
-ExecStart=/bin/bash @PATH@/monitor.sh
+ExecStart=/bin/bash @PATH@/screen_watcher.sh
 Restart=always
-RestartSec=10
+RestartSec=5
 
 [Install]
 WantedBy=default.target
