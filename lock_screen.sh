@@ -57,7 +57,8 @@ while true; do
     echo -e "\e[1;34m[ LAUNCH ]\e[0m Starting Lock UI on TTY $LOCK_VT..."
     
     # openvt -w waits for the command to finish.
-    openvt -c "$LOCK_VT" -s -f -w -- "$LOCK_UI_SCRIPT"
+    # We wrap in bash -c to ensure TERM is explicitly set for ncurses/tmatrix.
+    openvt -c "$LOCK_VT" -s -f -w -- /bin/bash -c "export TERM=linux; $LOCK_UI_SCRIPT"
     EXIT_CODE=$?
 
     if [ $EXIT_CODE -eq 0 ]; then

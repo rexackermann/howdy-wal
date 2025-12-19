@@ -18,6 +18,13 @@ else
     exit 1
 fi
 
+# --- TERMINAL INITIALIZATION ---
+# Ensure ncurses and other TTY tools work correctly by setting TERM
+export TERM="${TERM:-linux}"
+if [ "$TERM" = "unknown" ]; then
+    export TERM=linux
+fi
+
 # --- CLEANUP LOGIC ---
 # Ensures children are killed and terminal is reset on exit.
 cleanup() {
