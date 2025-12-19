@@ -7,6 +7,7 @@
 
 # --- INSTALLATION SETTINGS ---
 INSTALL_DIR="/opt/howdy-WAL"
+TARGET_USER="rex"
 
 # --- TIMING & BEHAVIOR ---
 # Idle time in milliseconds before triggering the lock (10000 = 10s)
@@ -29,6 +30,9 @@ SUDO_SERVICE="sudo"
 # The path where the GNOME Extension exports focused window data.
 FOCUS_DATA_FILE="/tmp/gnome-audio-status.json"
 
+# --- CAFFEINE MODE ---
+CAFFEINE_FILE="/tmp/howdy_caffeine"
+
 # --- INTERNAL PATHS ---
 LOG_FILE="/var/log/howdy-wal.log"
 LOG_MAX_LINES=1000
@@ -44,6 +48,11 @@ cleanup_logs() {
     fi
 }
 
+# Script Paths
 HOWDY_WRAPPER_SCRIPT="$INSTALL_DIR/howdy_wrapper.sh"
 CONFIG_FILE="$INSTALL_DIR/config.sh"
 PAM_VERIFY_SCRIPT="$INSTALL_DIR/pam_verify.py"
+LOCK_SCRIPT="$INSTALL_DIR/lock.sh"
+MONITOR_SCRIPT="$INSTALL_DIR/monitor.sh"
+MEDIA_CHECK_SCRIPT="$INSTALL_DIR/media_check.sh"
+CAFFEINE_SCRIPT="$INSTALL_DIR/caffeine.sh"

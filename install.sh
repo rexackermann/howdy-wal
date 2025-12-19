@@ -1,6 +1,6 @@
 #!/bin/bash
 ###############################################################################
-# install_v2.sh - Installer for Howdy-WAL V2 (Non-TTY)                       #
+# install.sh - Unified Howdy-WAL Installer (V2 Full Parity)                   #
 # --------------------------------------------------------------------------- #
 # Deploys the GNOME Shell Overlay extension and the D-Bus orchestrator.        #
 ###############################################################################
@@ -13,11 +13,11 @@ RED='\e[1;31m'
 NC='\e[0m'
 
 echo -e "${CYAN}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
-echo -e "${CYAN}┃          Howdy-WAL V2 - Non-TTY Evolution          ┃${NC}"
+echo -e "${CYAN}┃    Howdy-WAL - Unified Lock System (Full Parity)   ┃${NC}"
 echo -e "${CYAN}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
 
 # 1. Dependency Check
-echo -e "\n${YELLOW}[ 1/4 ] Verifying V2 Dependencies...${NC}"
+echo -e "\n${YELLOW}[ 1/4 ] Verifying Dependencies...${NC}"
 DEPENDENCIES=("zip" "gdbus" "python3" "pamtester")
 for dep in "${DEPENDENCIES[@]}"; do
     if ! command -v "$dep" &> /dev/null; then
@@ -36,43 +36,62 @@ fi
 echo -e "  ${GREEN}✓${NC} python3-pam"
 
 # 2. Deploy GNOME Shell Extension
-echo -e "\n${YELLOW}[ 2/4 ] Deploying Overlay Extension...${NC}"
-EXT_ID="overlay-locker@howdy-wal.local"
+echo -e "\n${YELLOW}[ 2/4 ] Deploying Overlay Extensions...${NC}"
 SOURCE_DIR="$( dirname "$( readlink -f "${BASH_SOURCE[0]}" )" )"
-EXT_SRC="$SOURCE_DIR/$EXT_ID"
 
-if [ -d "$EXT_SRC" ]; then
-    # Create local zip for proper installation
-    TMP_ZIP=$(mktemp /tmp/howdy-wal-v2.XXXXXX.zip)
-    (cd "$EXT_SRC" && zip -r "$TMP_ZIP" .) &>/dev/null
-    
+# Deploy Overlay Locker
+EXT_ID="overlay-locker@howdy-wal.local"
+if [ -d "$SOURCE_DIR/$EXT_ID" ]; then
+    TMP_ZIP=$(mktemp /tmp/howdy-wal.XXXXXX.zip)
+    (cd "$SOURCE_DIR/$EXT_ID" && zip -r "$TMP_ZIP" .) &>/dev/null
     gnome-extensions install --force "$TMP_ZIP" &>/dev/null
     rm "$TMP_ZIP"
-    
-    echo -e "  ${GREEN}✓${NC} Extension installed to ~/.local/share/gnome-shell/extensions/"
-else
-    echo -e "${RED}Error: Extension source not found.${NC}"
-    exit 1
+    echo -e "  ${GREEN}✓${NC} overlay-locker extension installed"
 fi
 
-# 3. Deploy Orchestrator & Helpers
-echo -e "\n${YELLOW}[ 3/4 ] Deploying V2 Scripts...${NC}"
+# Deploy Focus Exporter
+EXT_ID_FOCUS="focus-exporter@howdy-wal.local"
+if [ -d "$SOURCE_DIR/$EXT_ID_FOCUS" ]; then
+    TMP_ZIP_FOCUS=$(mktemp /tmp/howdy-wal-focus.XXXXXX.zip)
+    (cd "$SOURCE_DIR/$EXT_ID_FOCUS" && zip -r "$TMP_ZIP_FOCUS" .) &>/dev/null
+    gnome-extensions install --force "$TMP_ZIP_FOCUS" &>/dev/null
+    rm "$TMP_ZIP_FOCUS"
+    echo -e "  ${GREEN}✓${NC} focus-exporter extension installed"
+fi
+
+# 3. Deploy Core Scripts & User Service
+echo -e "\n${YELLOW}[ 3/4 ] Deploying Core Scripts & Services...${NC}"
 INSTALL_DIR="/opt/howdy-WAL"
-sudo cp "$SOURCE_DIR/lock_v2.sh" "$INSTALL_DIR/"
-sudo cp "$SOURCE_DIR/pam_verify.py" "$INSTALL_DIR/"
-sudo chmod +x "$INSTALL_DIR/lock_v2.sh"
-sudo chmod +x "$INSTALL_DIR/pam_verify.py"
-echo -e "  ${GREEN}✓${NC} Scripts deployed to $INSTALL_DIR"
+sudo mkdir -p "$INSTALL_DIR"
+sudo chown $USER:$USER "$INSTALL_DIR"
+
+# Copy all scripts
+SCRIPTS=("lock.sh" "pam_verify.py" "config.sh" "howdy_wrapper.sh" "monitor.sh" "media_check.sh" "caffeine.sh")
+for script in "${SCRIPTS[@]}"; do
+    if [ -f "$SOURCE_DIR/$script" ]; then
+        cp "$SOURCE_DIR/$script" "$INSTALL_DIR/"
+        chmod +x "$INSTALL_DIR/$script"
+        echo -e "  ${GREEN}✓${NC} $script deployed"
+    fi
+done
+
+# Deploy and enable User Service
+USER_SERVICE_DIR="$HOME/.config/systemd/user"
+mkdir -p "$USER_SERVICE_DIR"
+cp "$SOURCE_DIR/howdy-WAL.service" "$USER_SERVICE_DIR/"
+systemctl --user daemon-reload
+systemctl --user enable howdy-WAL.service
+echo -e "  ${GREEN}✓${NC} howdy-WAL.service enabled (User Service)"
 
 # 4. Final Instructions
 echo -e "\n${YELLOW}[ 4/4 ] Finalizing...${NC}"
 echo -e "${GREEN}====================================================${NC}"
-echo -e "${CYAN}          V2 Components Deployed Successfully!       ${NC}"
+echo -e "${CYAN}          Howdy-WAL Deployed Successfully!           ${NC}"
 echo -e "${GREEN}====================================================${NC}"
-echo -e "${YELLOW}CRITICAL STEP REQUIRED:${NC}"
-echo -e "Because this is a GNOME Shell Extension, you MUST"
-echo -e "${RED}LOG OUT and LOG BACK IN${NC} for GNOME to see the new plugin."
-echo -e "\nAfter logging back in, you can test the new way with:"
-echo -e "  ${CYAN}$INSTALL_DIR/lock_v2.sh${NC}"
-echo -e "\n${GREEN}No more Bluetooth/Media drops! Enjoy the smooth lock.${NC}"
+echo -e "${YELLOW}CRITICAL STEPS REQUIRED:${NC}"
+echo -e "1. You MUST ${RED}LOG OUT and LOG BACK IN${NC} for GNOME extensions."
+echo -e "2. Enable BOTH extensions in Extension Manager or Tweaks."
+echo -e "3. Start the monitor service:"
+echo -e "   ${CYAN}systemctl --user start howdy-WAL.service${NC}"
+echo -e "\n${GREEN}Full Parity V2: Smooth, Smart, and Persistent.${NC}"
 echo -e "====================================================\n"
