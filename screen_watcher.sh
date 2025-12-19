@@ -25,6 +25,15 @@ get_idle_time() {
                | awk -F' ' '{print $2}' | tr -cd '0-9'
 }
 
+is_native_lock_active() {
+    local status
+    status=$(gdbus call --session --dest org.gnome.ScreenSaver --object-path /org/gnome/ScreenSaver --method org.gnome.ScreenSaver.GetActive 2>/dev/null)
+    if [[ "$status" == "(true,)" ]]; then
+        return 0
+    fi
+    return 1
+}
+
 # --- LOGGING HELPER ---
 log_event() {
     local level="$1"
@@ -52,7 +61,15 @@ while true; do
         continue
     fi
 
-    # 2. Smart Media Logic
+    # 2. Native ScreenShield Check (SHIELD-AWARENESS)
+    # If the OS is already locked, the monitor should stay dormant 
+    # to release camera resources for GDM/Howdy-Unlock.
+    if is_native_lock_active; then
+        sleep 10
+        continue
+    fi
+
+    # 3. Smart Media Logic
     if "$MEDIA_CHECK_SCRIPT"; then
         sleep 5
         continue
