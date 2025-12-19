@@ -69,19 +69,28 @@ trap "kill $STIKCY_PID 2>/dev/null; exit" EXIT
 # We use openvt -w (wait) to block until the UI script exits.
 # If it exits with 0, it means authentication was successful.
 # If it exits with anything else, it probably crashed, so we restart it.
+# --- FAIL-CLOSED LAUNCH LOOP ---
+# We use openvt -w (wait) to block until the UI script exits.
 while true; do
-    echo -e "\e[1;34m[ LAUNCH ]\e[0m Starting Lock UI on TTY $LOCK_VT..."
+    # Ensure the log file is accessible to the user
+    touch "$LOG_FILE" 2>/dev/null
+    chmod 666 "$LOG_FILE" 2>/dev/null
+
+    # CRITICAL: If a previous attempt crashed, the TTY might be stuck.
+    # We explicitly deallocate it to avoid "Couldn't deallocate console" errors.
+    deallocvt "$LOCK_VT" 2>/dev/null
+
+    log_event "INFO" "Launching Lock UI on TTY $LOCK_VT..."
     
     # openvt -w waits for the command to finish.
-    # We use env to pass TERM explicitly to the project UI script.
     openvt -c "$LOCK_VT" -s -f -w -- env TERM=linux "$LOCK_UI_SCRIPT"
     EXIT_CODE=$?
     
     if [ $EXIT_CODE -eq 0 ]; then
-        echo -e "\e[1;32m[ SUCCESS ]\e[0m Authentication verified."
+        log_event "SUCCESS" "Authentication verified. Breaking loop."
         break
     else
-        echo -e "\e[1;31m[ CRASH ]\e[0m Lock UI terminated unexpectedly (Code: $EXIT_CODE). Respawning..."
+        log_event "ERROR" "Lock UI exited with Code $EXIT_CODE. Respawning in 1s..."
         sleep 1
     fi
 done

@@ -15,9 +15,6 @@ else
     exit 1
 fi
 
-# Override log file to user home for visibility
-LOG_FILE="$HOME/howdy-wal.log"
-
 # --- IDLE DETECTION LOGIC ---
 # Intererrogates GNOME's Mutter IdleMonitor via D-Bus.
 get_idle_time() {
@@ -33,6 +30,11 @@ log_event() {
     local level="$1"
     local message="$2"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    # Ensure log file exists and is writable (best effort)
+    [ -f "$LOG_FILE" ] || touch "$LOG_FILE" 2>/dev/null
+    chmod 666 "$LOG_FILE" 2>/dev/null
+    
     echo "[$timestamp] [$level] $message" >> "$LOG_FILE" 2>/dev/null
     echo -e "[$timestamp] [$level] $message"
 }
