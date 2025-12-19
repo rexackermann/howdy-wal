@@ -44,6 +44,9 @@ if [ -x "$BLUETOOTH_RECONNECT_SCRIPT" ]; then
     sudo -u "$TARGET_USER" "$BLUETOOTH_RECONNECT_SCRIPT" save
 fi
 
+# Perform initial log cleanup
+cleanup_logs
+
 log_event "INFO" "Securing session for $TARGET_USER on TTY $LOCK_VT..."
 
 # --- ENFORCEMENT DAEMON ---

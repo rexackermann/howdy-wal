@@ -82,7 +82,20 @@ VISUAL_ENGINE_ARGS="-s 60 -C green"
 # --- INTERNAL PATHS ---
 # Usually these do not need modification once installed.
 LOG_FILE="/var/log/howdy-wal.log"
+LOG_MAX_LINES=1000
 VERBOSE=true
+
+# Helper to truncate logs (keep last N lines)
+# Run at start of scripts to keep log size manageable
+cleanup_logs() {
+    if [ -f "$LOG_FILE" ] && [ "$(wc -l < "$LOG_FILE")" -gt "$LOG_MAX_LINES" ]; then
+        # Use a temp file to safely truncate
+        local tmp_log=$(mktemp)
+        tail -n "$LOG_MAX_LINES" "$LOG_FILE" > "$tmp_log"
+        cat "$tmp_log" > "$LOG_FILE"
+        rm "$tmp_log"
+    fi
+}
 
 # Communication file to bypass unreliable TTY exit codes
 AUTH_SUCCESS_FILE="/tmp/howdy_auth_success"

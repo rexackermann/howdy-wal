@@ -39,6 +39,9 @@ log_event() {
     echo -e "[$timestamp] [$level] $message"
 }
 
+# Perform initial log cleanup
+cleanup_logs
+
 log_event "INFO" "Howdy-WAL Monitor starting up..."
 
 # --- MAIN MONITORING LOOP ---
