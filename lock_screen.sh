@@ -5,7 +5,8 @@
 # This script handles the transition to a dedicated TTY and monitors the      #
 # lock state to ensure the user cannot switch away easily.                    #
 #                                                                             #
-# WARNING: This script requires root privileges to manipulate TTY settings.   #
+# HARDENED: Only returns to the desktop if successfully authenticated.        #
+# If the lock UI crashes, it is immediately respawned.                        #
 ###############################################################################
 
 # Determine script location and load central configuration
@@ -18,47 +19,56 @@ else
 fi
 
 # --- ROOT ELEVATION ---
-# Check if running as root. If not, attempt to elevate using sudo.
 if [ "$EUID" -ne 0 ]; then
-    echo -e "\e[1;33m[ SYSTEM ]\e[0m Elevating privileges to access Virtual Terminals..."
+    echo -e "\e[1;33m[ SYSTEM ]\e[0m Elevating privileges..."
     exec sudo "$0" "$@"
 fi
 
 # --- SESSION PRESERVATION ---
-# Capture the current TTY so we can return the user to their desktop later.
 ORIG_VT=$(fgconsole)
 export TARGET_USER="${SUDO_USER:-$USER}"
 
 echo -e "\e[1;32m[ LOCKING ]\e[0m Securing session on TTY $LOCK_VT..."
 
-# --- TTY SWITCHING ---
-# Clear any existing stale lock files
-[ -f "$LOCK_FILE" ] && rm -f "$LOCK_FILE"
+# --- ENFORCEMENT DAEMON ---
+# We launch the "Sticky TTY" check in the background.
+# It stays active as long as this parent script is running.
+enforce_sticky_tty() {
+    while true; do
+        CURRENT_VT=$(fgconsole)
+        # If VT is not the Lock VT AND not the Emergency VT, pull back.
+        if [ "$CURRENT_VT" != "$LOCK_VT" ] && [ "$CURRENT_VT" != "$EMERGENCY_VT" ]; then
+            chvt "$LOCK_VT"
+        fi
+        sleep 0.5
+    done
+}
+enforce_sticky_tty &
+STIKCY_PID=$!
 
-# Launch the UI script on a separate TTY.
-# -c: VT number | -s: Switch to it | -f: Force
-openvt -c "$LOCK_VT" -s -f -- "$LOCK_UI_SCRIPT"
+# Ensure the background daemon is killed when this script exits
+trap "kill $STIKCY_PID 2>/dev/null; exit" EXIT
 
-# Wait for the UI script to initialize
-sleep 1.5
+# --- FAIL-CLOSED LAUNCH LOOP ---
+# We use openvt -w (wait) to block until the UI script exits.
+# If it exits with 0, it means authentication was successful.
+# If it exits with anything else, it probably crashed, so we restart it.
+while true; do
+    echo -e "\e[1;34m[ LAUNCH ]\e[0m Starting Lock UI on TTY $LOCK_VT..."
+    
+    # openvt -w waits for the command to finish.
+    openvt -c "$LOCK_VT" -s -f -w -- "$LOCK_UI_SCRIPT"
+    EXIT_CODE=$?
 
-# --- STICKY TTY ENFORCEMENT ---
-# As long as the lock UI is running, we periodically check if the user 
-# tried to Alt+Ctrl+Fx away. If they did, we drag them back.
-SCRIPT_NAME=$(basename "$LOCK_UI_SCRIPT")
-
-echo -e "\e[1;34m[ MONITORING ]\e[0m TTY Enforcement sequence active."
-
-while pgrep -f "$SCRIPT_NAME" > /dev/null; do
-    CURRENT_VT=$(fgconsole)
-    # If VT is not the Lock VT AND not the Emergency VT, pull back.
-    if [ "$CURRENT_VT" != "$LOCK_VT" ] && [ "$CURRENT_VT" != "$EMERGENCY_VT" ]; then
-        # Intrusion detected! Focus restoration in progress.
-        chvt "$LOCK_VT"
+    if [ $EXIT_CODE -eq 0 ]; then
+        echo -e "\e[1;32m[ SUCCESS ]\e[0m Authentication verified."
+        break
+    else
+        echo -e "\e[1;31m[ CRASH ]\e[0m Lock UI terminated unexpectedly (Code: $EXIT_CODE). Respawning..."
+        sleep 1
     fi
-    sleep 0.5
 done
 
 # --- RESTORATION ---
-echo -e "\e[1;32m[ UNLOCKED ]\e[0m Returning to session on TTY $ORIG_VT."
+echo -e "\e[1;32m[ UNLOCKED ]\e[0m Authenticated. Returning to VT $ORIG_VT."
 chvt "$ORIG_VT"

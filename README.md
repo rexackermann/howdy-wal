@@ -14,6 +14,7 @@ A hardened, terminal-based biometric lockscreen for GNOME/Wayland. This project 
 
 - **🚀 Biometric Security**: Seamless unlocking via `howdy` facial recognition.
 - **🔒 Hardened TTY Locking**: Switches session to TTY 9, rendering standard desktop bypasses useless.
+- **🛡️ Fail-Closed Design**: If the lock UI crashes or is killed, it automatically respawns. Access to the desktop is only granted upon successful authentication.
 - **📟 Interchangeable Visuals**: Use `tmatrix`, `cmatrix`, `bonsai`, or any CLI tool as your screensaver.
 - **☕ Caffeine Mode**: Quickly pause auto-locking for movie nights or presentations.
 - **⌨️ Interactive Fallback**: Secure password entry via PAM if face verification fails.
