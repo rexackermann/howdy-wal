@@ -19,6 +19,18 @@ IDLE_THRESHOLD_MS=10000
 # Uses a heuristic: Audio playing + Active Idle Inhibitor = Foreground Media.
 SMART_MEDIA=true
 
+# MATCH MEDIA INHIBITOR: If true, will only skip lock if the application
+# playing audio is the SAME as the application inhibiting idle.
+# This allows background music (like Spotify) to follow idle policy
+# while foreground video (like YouTube) skips it.
+MATCH_MEDIA_INHIBITOR=true
+
+# IGNORE INHIBITORS: List of app IDs whose inhibitors should be ignored
+# for media detection (e.g. general purpose caffeine extensions).
+# Note: They won't stop the lock unless MATCH_MEDIA_INHIBITOR is false.
+# Leave empty to allow any inhibitor to match.
+IGNORE_INHIBITORS="caffeine-gnome-extension"
+
 # IGNORE PHANTOM AUDIO: Some apps keep audio streams open while paused.
 # If true, only RUNNING audio streams prevent locking.
 ONLY_RUNNING_AUDIO=true
