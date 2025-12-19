@@ -11,7 +11,8 @@ Howdy-WAL (Wait-And-Lock) is a high-performance terminal visual engine lockscree
 
 ## ✨ Features
 
-- **🎧 BT Preservation**: Persistent Bluetooth connections via WirePlumber policy and automatic reconnection helper.
+- **🎧 BT Preservation**: Persistent Bluetooth connections via WirePlumber policy (TTY) or **Native Overlays (V2)**.
+- **🚀 Non-TTY Evolution (V2)**: Stay in your session! Zero Bluetooth drops, zero TTY switch delay.
 - **👆 Universal Input Wake**: Instant wake on **mouse movement**, **clicks**, **touchpad swipes**, **touchscreen taps**, or any **key press**.
 - **🚀 Biometric Security**: Seamless unlocking via `howdy` facial recognition mapping.
 - **🔒 Hardened TTY Locking**: Switches to TTY 9, rendering desktop-level bypasses useless.
@@ -43,12 +44,19 @@ sudo dnf copr enable principis/howdy
 sudo dnf install howdy pamtester tmatrix
 ```
 
-### 2. Guided Setup
+### 2. Guided Setup (Traditional TTY)
 ```bash
 git clone https://github.com/USER/howdy-WAL.git
 cd howdy-WAL
 ./install.sh
 ```
+
+### 3. V2 Setup (Seamless Non-TTY)
+*Recommended for Bluetooth/Media heavy users.*
+```bash
+./install_v2.sh
+```
+*Note: Requires logout/login after installation.*
 
 ---
 
