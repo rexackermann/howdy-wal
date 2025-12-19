@@ -16,7 +16,19 @@ IDLE_THRESHOLD_MS=10000
 # SMART MEDIA: If true, will not lock if video/media is in the foreground.
 SMART_MEDIA=true
 
+# MATCH MEDIA INHIBITOR: If true, will only skip lock if the application
+# playing audio is the SAME as the application inhibiting idle.
+MATCH_MEDIA_INHIBITOR=true
+
+# IGNORE INHIBITORS: List of app IDs whose inhibitors should be ignored
+# for media detection (e.g. general purpose caffeine extensions).
+IGNORE_INHIBITORS="caffeine-gnome-extension"
+
+# IGNORE PHANTOM AUDIO: Some apps keep audio streams open while paused.
+ONLY_RUNNING_AUDIO=true
+
 # Grace period (seconds) after unlocking before the monitor resumes checking
+# This prevents immediate re-locking if the system hasn't registered activity yet.
 UNLOCK_GRACE_PERIOD=30
 
 # --- AUTHENTICATION SERVICES ---
