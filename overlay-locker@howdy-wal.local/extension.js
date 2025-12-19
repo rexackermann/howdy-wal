@@ -28,8 +28,9 @@ export default class HowdyWalOverlayExtension {
         this._overlay = null;
         this._entry = null;
         this._isLocked = false;
+        this._escapeCount = 0;
+        this._lastEscapeTime = 0;
 
-        // Initialize D-Bus
         this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(DBUS_XML, this);
         this._dbusImpl.export(Gio.DBus.session, '/org/gnome/Shell/Extensions/HowdyWalOverlay');
     }
@@ -45,7 +46,6 @@ export default class HowdyWalOverlayExtension {
     ShowLock() {
         if (this._isLocked) return true;
 
-        // Create the full-screen overlay
         this._overlay = new St.Widget({
             name: 'howdy-wal-overlay',
             style: 'background-color: #000000;',
@@ -53,17 +53,14 @@ export default class HowdyWalOverlayExtension {
             can_focus: true,
         });
 
-        // Ensure it covers the whole screen
         this._overlay.set_position(0, 0);
         this._overlay.set_size(global.screen_width, global.screen_height);
 
-        // Add to chrome
         Main.layoutManager.addChrome(this._overlay, {
             affectsInputRegion: true,
             trackFullscreen: true,
         });
 
-        // Push modal to grab ALL input
         if (Main.pushModal(this._overlay)) {
             this._isLocked = true;
             this._setupInputMonitoring();
@@ -83,7 +80,6 @@ export default class HowdyWalOverlayExtension {
             can_focus: true,
         });
 
-        // Center on primary monitor
         let monitor = Main.layoutManager.primaryMonitor;
         this._entry.set_position(
             monitor.x + (monitor.width - 400) / 2,
@@ -104,7 +100,6 @@ export default class HowdyWalOverlayExtension {
     }
 
     HideLock() {
-        if (!this._isLocked) return true;
         this._cleanup();
         return true;
     }
@@ -113,7 +108,22 @@ export default class HowdyWalOverlayExtension {
         this._eventId = this._overlay.connect('event', (actor, event) => {
             let type = event.type();
 
-            // If we have an entry, let it handle keys
+            // EMERGENCY BYPASS: Triple-Escape in 1 second
+            if (type === Clutter.EventType.KEY_PRESS && event.get_key_symbol() === Clutter.KEY_Escape) {
+                let now = Date.now();
+                if (now - this._lastEscapeTime < 1000) {
+                    this._escapeCount++;
+                } else {
+                    this._escapeCount = 1;
+                }
+                this._lastEscapeTime = now;
+
+                if (this._escapeCount >= 3) {
+                    this.HideLock();
+                    return Clutter.EVENT_STOP;
+                }
+            }
+
             if (this._entry)
                 return Clutter.EVENT_PROPAGATE;
 
@@ -141,5 +151,6 @@ export default class HowdyWalOverlayExtension {
             this._overlay = null;
         }
         this._isLocked = false;
+        this._escapeCount = 0;
     }
 }

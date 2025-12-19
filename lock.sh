@@ -1,9 +1,9 @@
 #!/bin/bash
 ###############################################################################
-#             Howdy-WAL V2 - Non-TTY Overlay Orchestrator                     #
+#             Howdy-WAL - Non-TTY Overlay Orchestrator                        #
 # --------------------------------------------------------------------------- #
-# This script manages the transition to the GNOME Shell Overlay and handles   #
-# the authentication flow within the current session.                         #
+# This script manages the GNOME Shell Overlay and handles the authentication  #
+# flow within the current session.                                            #
 ###############################################################################
 
 # Determine script location and load central configuration
@@ -27,7 +27,7 @@ log_event() {
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     echo -e "[$timestamp] [$level] $message"
     if [ -w "$LOG_FILE" ]; then
-        echo "[$timestamp] [$level] $message" | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g" >> "$LOG_FILE" >> "$LOG_FILE"
+        echo "[$timestamp] [$level] $message" | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g" >> "$LOG_FILE"
     fi
 }
 
@@ -51,7 +51,7 @@ fi
 log_event "SUCCESS" "Overlay Active. Session Secure."
 
 # --- MAIN MONITOR LOOP ---
-# We use a background process to monitor signals and act accordingly
+# Use line-buffered monitoring to prevent getting stuck in buffers
 gdbus monitor --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" | while read -r line; do
     
     # 1. Handle Interaction (Wake)
@@ -68,7 +68,8 @@ gdbus monitor --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" | while r
 
     # 2. Handle Password Submission
     if echo "$line" | grep -q "PasswordSubmitted"; then
-        PASSWORD=$(echo "$line" | sed -n "s/.*'\(.*\)'.*/\1/p")
+        # Extract password between quotes
+        PASSWORD=$(echo "$line" | grep -oP "(?<=').*?(?=')")
         log_event "DEBUG" "Password received. Verifying..."
         
         # Verify via Python PAM helper
