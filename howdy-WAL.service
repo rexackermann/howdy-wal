@@ -3,7 +3,7 @@ Description=Howdy-WAL V2 Monitor
 After=graphical-session.target
 
 [Service]
-ExecStart=/bin/bash /opt/howdy-WAL/monitor.sh
+ExecStart=/bin/bash @PATH@/monitor.sh
 Restart=always
 RestartSec=10
 
