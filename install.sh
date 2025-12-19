@@ -62,6 +62,7 @@ sudo cp "$SOURCE_DIR"/*.sh "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/faceauth" "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/howdy-WAL.service" "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/00-howdy-WAL" "$INSTALL_DIR/"
+sudo cp "$SOURCE_DIR/lock_now.sh" "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/LICENSE" "$INSTALL_DIR/"
 
 # Set permissions

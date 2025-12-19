@@ -58,12 +58,25 @@ attempt_password_auth() {
 
 # --- MAIN LOOP ---
 while true; do
-    # 1. Start the Visual Engine (The "Screensaver")
+    # 1. Start the Visual Engine (The "Screensaver") in the background
     echo "Launching visual engine: $VISUAL_ENGINE..."
-    $VISUAL_ENGINE $VISUAL_ENGINE_ARGS
     
-    # 2. Trigger Face Check on Exit
-    # When $VISUAL_ENGINE exits (via 'q' or other), it means user wants to unlock.
+    # Run the engine and capture its PID
+    $VISUAL_ENGINE $VISUAL_ENGINE_ARGS &
+    VE_PID=$!
+    
+    # 2. Wait for ANY key press
+    # We use 'read' to wait for a single character.
+    # We turn off echo and use raw mode to ensure we catch everything.
+    stty -echo -icanon
+    read -n 1 -s choice
+    stty echo icanon
+    
+    # Kill the visual engine immediately
+    kill "$VE_PID" 2>/dev/null
+    wait "$VE_PID" 2>/dev/null
+    
+    # 3. Trigger Face Check
     clear
     echo -e "\e[1;34m[ SCANNING ]\e[0m Searching for verified user..."
     
