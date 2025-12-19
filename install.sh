@@ -26,7 +26,11 @@ DEPS=("howdy" "pamtester" "gdbus" "openvt" "fgconsole" "sed" "awk")
 for dep in "${DEPS[@]}"; do
     if ! command -v "$dep" &> /dev/null; then
         echo -e "${RED}Error: Dependency '$dep' not found.${NC}"
-        echo "Please install it and try again."
+        if [ "$dep" == "howdy" ]; then
+            echo -e "${YELLOW}Howdy is usually not in official repos.${NC}"
+            echo "Please follow the official guide at: https://github.com/boltgolt/howdy"
+            echo "Or for Fedora, check the 'principis/howdy' COPR."
+        fi
         exit 1
     fi
     echo -e "  ${GREEN}✓${NC} $dep"

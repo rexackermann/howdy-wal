@@ -34,12 +34,18 @@ A hardened, terminal-based biometric lockscreen for GNOME/Wayland. This project 
 
 ## 🛠️ Installation
 
-### 1. Prerequisites
-Ensure you have the following packages installed:
-```bash
-sudo dnf install howdy pamtester tmatrix
-```
-*Note: `tmatrix` can be replaced in `config.sh`.*
+### 1. Prerequisites & Howdy Setup
+This project depends on **Howdy**, which is not available in most official distribution repositories. You must install and configure it manually first.
+
+> [!IMPORTANT]
+> **HOWDY INSTALLATION**:
+> - **Official Repository**: [boltgolt/howdy](https://github.com/boltgolt/howdy)
+> - **Fedora (COPR)**: Most users on Fedora use the `principis/howdy` COPR:
+>   ```bash
+>   sudo dnf copr enable principis/howdy
+>   sudo dnf install howdy pamtester tmatrix
+>   ```
+> - **Verification**: Ensure `sudo howdy test` works before proceeding with this installer.
 
 ### 2. Guided Install
 Clone the repository and run the installer:
