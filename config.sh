@@ -81,6 +81,11 @@ VISUAL_ENGINE_ARGS="-s 60 -C green"
 
 # --- INTERNAL PATHS ---
 # Usually these do not need modification once installed.
+LOG_DIR="$INSTALL_DIR/logs"
+LOG_FILE="$LOG_DIR/howdy-wal.log"
+
+LAST_UNLOCK_FILE="/tmp/howdy_last_unlock"
+
 LOCK_LAUNCHER_SCRIPT="$INSTALL_DIR/lock_screen.sh"
 LOCK_UI_SCRIPT="$INSTALL_DIR/lock_ui.sh"
 HOWDY_WRAPPER_SCRIPT="$INSTALL_DIR/howdy_wrapper.sh"

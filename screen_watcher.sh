@@ -25,7 +25,18 @@ get_idle_time() {
                | awk -F' ' '{print $2}' | tr -cd '0-9'
 }
 
-echo -e "\e[1;36m[ DAEMON ]\e[0m Howdy-WAL Monitor starting up..."
+# --- LOGGING HELPER ---
+log_event() {
+    local level="$1"
+    local message="$2"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo -e "[$timestamp] [$level] $message"
+    if [ -w "$LOG_FILE" ]; then
+        echo "[$timestamp] [$level] $message" | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g" >> "$LOG_FILE"
+    fi
+}
+
+log_event "INFO" "Howdy-WAL Monitor starting up..."
 
 # --- MAIN MONITORING LOOP ---
 while true; do
@@ -35,54 +46,63 @@ while true; do
         continue
     fi
 
-    # 2. Smart Media Logic
-    # Calls the external module to decide if media should block locking
+    # 2. Global Cooldown Check
+    # If the user just unlocked, we wait for activity or a timeout.
+    if [ -f "$LAST_UNLOCK_FILE" ]; then
+        current_time=$(date +%s)
+        file_time=$(stat -c %Y "$LAST_UNLOCK_FILE")
+        age=$((current_time - file_time))
+        
+        if [ "$age" -lt "$UNLOCK_GRACE_PERIOD" ]; then
+            # Still in grace period.
+            sleep 5
+            continue
+        fi
+    fi
+
+    # 3. Smart Media Logic
     if "$MEDIA_CHECK_SCRIPT"; then
-        # Media check returned 0 -> BLOCK LOCK (Skip idle check)
-        # echo "Foreground media detected. Skipping idle check..."
         sleep 5
         continue
     fi
 
-    # 3. Get current system idle time (milliseconds)
+    # 4. Get current system idle time (milliseconds)
     IDLE_MS=$(get_idle_time)
     
-    # Handle environment issues (e.g. D-Bus not ready)
     if [ -z "$IDLE_MS" ]; then
-        # echo "Warning: Unable to retrieve idle time."
         sleep 5
         continue
     fi
 
-    # 3. Decision Logic
+    # 5. Decision Logic
     if [ "$IDLE_MS" -gt "$IDLE_THRESHOLD_MS" ]; then
-        
-        # Ensure we aren't already locked
         UI_SCRIPT_NAME=$(basename "$LOCK_UI_SCRIPT")
+        
         if ! pgrep -f "$UI_SCRIPT_NAME" >/dev/null; then
+            log_event "TRIGGER" "Idle threshold reached ($IDLE_MS ms). Checking presence..."
             
-            echo -e "\e[1;33m[ TRIGGER ]\e[0m Idle threshold reached ($IDLE_MS ms). Checking presence..."
-            
-            # Step 1: Quick verification (Am I alone?)
+            # Step 1: Quick verification
             if ! "$HOWDY_WRAPPER_SCRIPT"; then
-                echo -e "\e[1;31m[ ABSENCE ]\e[0m User not detected. Initiating LOCKdown."
+                log_event "LOCK" "User not detected. Initiating LOCKdown."
                 
                 # Step 2: Full Lock Screen
-                "$LOCK_LAUNCHER_SCRIPT"
+                # Use systemd-inhibit to try and keep the session active during lock
+                systemd-inhibit --why="Howdy-WAL Lockscreen active" \
+                                --who="Howdy-WAL" \
+                                --mode=block \
+                                --what=idle:sleep:handle-lid-switch \
+                                "$LOCK_LAUNCHER_SCRIPT"
                 
-                # Step 3: Post-Unlock Grace Period
-                # After unlocking, the IDLE timer is still high until the user moves the mouse.
-                # We sleep to give them time to resume activity.
-                echo -e "\e[1;32m[ RESUME ]\e[0m Unlocked. Entering grace period (${UNLOCK_GRACE_PERIOD}s)."
+                log_event "RESUME" "Session resumed. Entering grace period."
+                # Touch the cooldown file just in case it wasn't already
+                touch "$LAST_UNLOCK_FILE" 2>/dev/null
                 sleep "$UNLOCK_GRACE_PERIOD"
             else
-                # User is present but idle (e.g. reading/watching)
-                # We do nothing and let them be.
+                log_event "INFO" "User is present. Skipping lock."
                 sleep 5
             fi
         fi
     fi
     
-    # Polling resolution: 1 second
     sleep 1
 done

@@ -21,7 +21,20 @@ A hardened, terminal-based biometric lockscreen for GNOME/Wayland. This project 
 - **📟 Interchangeable Visuals**: Use `tmatrix`, `cmatrix`, `bonsai`, or any CLI tool as your screensaver.
 - **☕ Caffeine Mode**: Quickly pause auto-locking for movie nights or presentations.
 - **⌨️ Interactive Fallback**: Secure password entry via PAM if face verification fails.
+- **📜 Audit Logging**: All events are logged to `/opt/howdy-WAL/logs/howdy-wal.log` for debugging and history.
 - **🛠️ System-wide Install**: Deploy to `/opt/howdy-WAL` for clean system integration.
+
+---
+
+## Troubleshooting
+
+### 🔄 Matrix Loop
+If the system keeps returning to the lock screen immediately after unlock, check the logs. This usually happens if the system doesn't register user activity (mouse/keyboard) fast enough. We've implemented a **30s Grace Period** after every unlock to prevent this.
+
+### 🎧 Bluetooth Disconnects
+Switching to a TTY marks your graphical session as "inactive", which might cause Bluetooth or Audio to suspend.
+- **Fix**: Howdy-WAL uses `systemd-inhibit` to try and prevent this.
+- **Pro Tip**: If your Bluetooth audio still drops, you may need to disable WirePlumber's suspension policy in your user config.
 
 ---
 

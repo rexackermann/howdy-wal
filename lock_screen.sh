@@ -18,6 +18,17 @@ else
     exit 1
 fi
 
+# --- LOGGING HELPER ---
+log_event() {
+    local level="$1"
+    local message="$2"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo -e "[$timestamp] [$level] $message"
+    if [ -w "$LOG_FILE" ]; then
+        echo "[$timestamp] [$level] $message" | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g" >> "$LOG_FILE"
+    fi
+}
+
 # --- ROOT ELEVATION ---
 if [ "$EUID" -ne 0 ]; then
     echo -e "\e[1;33m[ SYSTEM ]\e[0m Elevating privileges..."
@@ -28,7 +39,7 @@ fi
 ORIG_VT=$(fgconsole)
 export TARGET_USER="${SUDO_USER:-$USER}"
 
-echo -e "\e[1;32m[ LOCKING ]\e[0m Securing session on TTY $LOCK_VT..."
+log_event "INFO" "Securing session for $TARGET_USER on TTY $LOCK_VT..."
 
 # --- ENFORCEMENT DAEMON ---
 # We launch the "Sticky TTY" check in the background.
@@ -76,6 +87,11 @@ done
 [ -n "$STIKCY_PID" ] && kill "$STIKCY_PID" 2>/dev/null
 wait "$STIKCY_PID" 2>/dev/null
 
-echo -e "\e[1;32m[ UNLOCKED ]\e[0m Authenticated. Returning to VT $ORIG_VT."
+log_event "SUCCESS" "Authentication verified. Returning to VT $ORIG_VT."
 chvt "$ORIG_VT"
+
+# Global cooldown notification for the monitor
+touch "$LAST_UNLOCK_FILE" 2>/dev/null
+chmod 666 "$LAST_UNLOCK_FILE" 2>/dev/null
+
 exit 0

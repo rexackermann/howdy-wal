@@ -18,6 +18,17 @@ else
     exit 1
 fi
 
+# --- LOGGING HELPER ---
+log_event() {
+    local level="$1"
+    local message="$2"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo -e "[$timestamp] [$level] $message"
+    if [ -w "$LOG_FILE" ]; then
+        echo "[$timestamp] [$level] $message" | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g" >> "$LOG_FILE"
+    fi
+}
+
 # --- TERMINAL INITIALIZATION ---
 # Ensure ncurses and other TTY tools work correctly by setting TERM
 export TERM="${TERM:-linux}"
@@ -85,15 +96,16 @@ while true; do
     
     # 3. Trigger Face Check
     clear
-    echo -e "\e[1;34m[ SCANNING ]\e[0m Searching for verified user..."
+    log_event "INFO" "Triggering facial verification..."
     
     if "$HOWDY_WRAPPER_SCRIPT"; then
-        echo -e "\e[1;32m[ VERIFIED ]\e[0m Welcome back, ${TARGET_USER:-$USER}."
+        log_event "SUCCESS" "User verified via Howdy."
+        touch "$LAST_UNLOCK_FILE" 2>/dev/null
         exit 0
     fi
     
-    # 3. Interactive Auth Menu on Failure
-    echo -e "\n\e[1;31m[ FAILED ]\e[0m No authorized presence detected."
+    # 4. Interactive Auth Menu on Failure
+    log_event "WARN" "Facial verification failed. Entering menu."
     echo "----------------------------------------------------"
     echo -e "Options: [\e[1;36mR\e[0m]etry Face | [\e[1;36mP\e[0m]assword Auth | [\e[1;36mSpace\e[0m] Re-lock"
     echo "Waiting for input..."
@@ -104,6 +116,8 @@ while true; do
     case "$choice" in
         p|P)
             if attempt_password_auth; then
+                log_event "SUCCESS" "User verified via Password."
+                touch "$LAST_UNLOCK_FILE" 2>/dev/null
                 exit 0
             fi
             ;;
