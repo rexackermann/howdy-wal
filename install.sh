@@ -1,8 +1,8 @@
 #!/bin/bash
 ###############################################################################
-#             Howdy Autolock - System Installer                               #
+# install.sh - Installer for Howdy-Wal
 # --------------------------------------------------------------------------- #
-# Installs Howdy Autolock to /opt/howdy-autolock and configures system        #
+# Installs Howdy-Wal to /opt/howdy-wal and configures system                 #
 # integrations (PAM, Sudoers, Systemd).                                       #
 #                                                                             #
 # MUST BE RUN AS REGULAR USER (will prompt for sudo).                         #
@@ -17,7 +17,7 @@ CYAN='\e[1;36m'
 NC='\e[0m' # No Color
 
 echo -e "${BLUE}====================================================${NC}"
-echo -e "${CYAN}          Howdy Autolock - System Installer         ${NC}"
+echo -e "${CYAN}          Howdy-Wal - System Installer              ${NC}"
 echo -e "${BLUE}====================================================${NC}"
 
 # 1. Dependency Check
@@ -43,7 +43,7 @@ if [ "$EUID" -eq 0 ]; then
     exit 1
 fi
 
-INSTALL_DIR="/opt/howdy-autolock"
+INSTALL_DIR="/opt/howdy-wal"
 CURRENT_USER="$USER"
 SOURCE_DIR="$( dirname "$( readlink -f "${BASH_SOURCE[0]}" )" )"
 
@@ -60,8 +60,8 @@ sudo mkdir -p "$INSTALL_DIR"
 echo "Copying scripts..."
 sudo cp "$SOURCE_DIR"/*.sh "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/faceauth" "$INSTALL_DIR/"
-sudo cp "$SOURCE_DIR/howdy-autolock.service" "$INSTALL_DIR/"
-sudo cp "$SOURCE_DIR/00-howdy-autolock" "$INSTALL_DIR/"
+sudo cp "$SOURCE_DIR/howdy-wal.service" "$INSTALL_DIR/"
+sudo cp "$SOURCE_DIR/00-howdy-wal" "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/LICENSE" "$INSTALL_DIR/"
 
 # Set permissions
@@ -91,28 +91,28 @@ fi
 # 5. Sudoers Integration
 echo -e "\n${YELLOW}[ 4/6 ] Configuring Sudoers (passwordless lock)...${NC}"
 SUDOERS_TMP=$(mktemp)
-sed "s|@USER@|$CURRENT_USER|g; s|@PATH@|$INSTALL_DIR|g" "$INSTALL_DIR/00-howdy-autolock" > "$SUDOERS_TMP"
-sudo cp "$SUDOERS_TMP" "/etc/sudoers.d/00-howdy-autolock"
-sudo chmod 0440 "/etc/sudoers.d/00-howdy-autolock"
+sed "s|@USER@|$CURRENT_USER|g; s|@PATH@|$INSTALL_DIR|g" "$INSTALL_DIR/00-howdy-wal" > "$SUDOERS_TMP"
+sudo cp "$SUDOERS_TMP" "/etc/sudoers.d/00-howdy-wal"
+sudo chmod 0440 "/etc/sudoers.d/00-howdy-wal"
 rm "$SUDOERS_TMP"
 echo -e "  ${GREEN}✓${NC} Sudoers rule installed."
 
 # 6. Systemd Service Registration
 echo -e "\n${YELLOW}[ 5/6 ] Registering User Service...${NC}"
 SERVICE_TMP=$(mktemp)
-sed "s|@PATH@|$INSTALL_DIR|g" "$INSTALL_DIR/howdy-autolock.service" > "$SERVICE_TMP"
+sed "s|@PATH@|$INSTALL_DIR|g" "$INSTALL_DIR/howdy-wal.service" > "$SERVICE_TMP"
 USER_SERVICE_DIR="$HOME/.config/systemd/user"
 mkdir -p "$USER_SERVICE_DIR"
-cp "$SERVICE_TMP" "$USER_SERVICE_DIR/howdy-autolock.service"
+cp "$SERVICE_TMP" "$USER_SERVICE_DIR/howdy-wal.service"
 rm "$SERVICE_TMP"
 
 systemctl --user daemon-reload
-systemctl --user enable --now howdy-autolock.service
+systemctl --user enable --now howdy-wal.service
 echo -e "  ${GREEN}✓${NC} Systemd user service enabled and started."
 
 echo -e "\n${YELLOW}[ 6/6 ] Finalizing...${NC}"
 echo -e "${GREEN}====================================================${NC}"
-echo -e "${GREEN}          Installation Successful!                  ${NC}"
+echo -e "${CYAN}          Howdy-Wal - Installation Successful!      ${NC}"
 echo -e "${GREEN}====================================================${NC}"
 echo -e "The project is installed in ${CYAN}$INSTALL_DIR${NC}"
 echo -e "You can now safely delete the source directory."

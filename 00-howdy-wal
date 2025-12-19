@@ -1,0 +1,2 @@
+# Allow user to run the lock_screen.sh script as root without a password.
+@USER@ ALL=(ALL) NOPASSWD: @PATH@/lock_screen.sh

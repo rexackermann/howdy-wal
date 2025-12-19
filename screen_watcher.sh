@@ -1,6 +1,6 @@
 #!/bin/bash
 ###############################################################################
-#             Howdy Autolock - System Idle Monitor Daemon                     #
+#             Howdy-Wal - System Idle Monitor Daemon                     #
 # --------------------------------------------------------------------------- #
 # This background service watches for system idleness and triggers the        #
 # biometric verification or the lock screen as necessary.                     #
@@ -25,7 +25,7 @@ get_idle_time() {
                | awk -F' ' '{print $2}' | tr -cd '0-9'
 }
 
-echo -e "\e[1;36m[ DAEMON ]\e[0m Howdy Autolock Monitor starting up..."
+echo -e "\e[1;36m[ DAEMON ]\e[0m Howdy-Wal Monitor starting up..."
 
 # --- MAIN MONITORING LOOP ---
 while true; do

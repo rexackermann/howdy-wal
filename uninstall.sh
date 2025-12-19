@@ -1,8 +1,8 @@
 #!/bin/bash
 ###############################################################################
-#             Howdy Autolock - System Uninstaller                             #
+# uninstall.sh - Uninstaller for Howdy-Wal
 # --------------------------------------------------------------------------- #
-# Removes Howdy Autolock from /opt/howdy-autolock and cleans up integrations. #
+# Removes Howdy-Wal from /opt/howdy-wal and cleans up integrations.           #
 ###############################################################################
 
 # --- COLOR DEFINITIONS ---
@@ -13,23 +13,23 @@ BLUE='\e[1;34m'
 NC='\e[0m'
 
 echo -e "${BLUE}====================================================${NC}"
-echo -e "${YELLOW}          Howdy Autolock - System Uninstaller       ${NC}"
+echo -e "${YELLOW}          Howdy-Wal - System Uninstaller            ${NC}"
 echo -e "${BLUE}====================================================${NC}"
 
-INSTALL_DIR="/opt/howdy-autolock"
+INSTALL_DIR="/opt/howdy-wal"
 
 # 1. Stop Service
 echo -e "\n${YELLOW}[ 1/4 ] Stopping & Disabling Service...${NC}"
-systemctl --user stop howdy-autolock.service 2>/dev/null
-systemctl --user disable howdy-autolock.service 2>/dev/null
-rm -f "$HOME/.config/systemd/user/howdy-autolock.service"
+systemctl --user stop howdy-wal.service 2>/dev/null
+systemctl --user disable howdy-wal.service 2>/dev/null
+rm -f "$HOME/.config/systemd/user/howdy-wal.service"
 systemctl --user daemon-reload
 echo -e "  ${GREEN}✓${NC} Systemd service removed."
 
 # 2. Remove Sudoers Rule
 echo -e "\n${YELLOW}[ 2/4 ] Removing Sudoers Rule...${NC}"
-if [ -f "/etc/sudoers.d/00-howdy-autolock" ]; then
-    sudo rm "/etc/sudoers.d/00-howdy-autolock"
+if [ -f "/etc/sudoers.d/00-howdy-wal" ]; then
+    sudo rm "/etc/sudoers.d/00-howdy-wal"
     echo -e "  ${GREEN}✓${NC} Sudoers rule removed."
 fi
 
@@ -47,4 +47,4 @@ if [ -d "$INSTALL_DIR" ]; then
     echo -e "  ${GREEN}✓${NC} $INSTALL_DIR deleted."
 fi
 
-echo -e "\n${GREEN}Cleanup complete. Howdy Autolock has been uninstalled.${NC}\n"
+echo -e "\n${GREEN}Cleanup complete. Howdy-Wal has been uninstalled.${NC}\n"

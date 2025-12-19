@@ -1,6 +1,6 @@
 #!/bin/bash
 ###############################################################################
-#             Howdy Autolock - Caffeine Management                            #
+#             Howdy-Wal - Caffeine Management                            #
 # --------------------------------------------------------------------------- #
 # This script toggles the "Caffeine" state, which prevents the monitor        #
 # from triggering the lock even when the system is idle.                      #

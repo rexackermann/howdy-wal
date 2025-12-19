@@ -1,6 +1,6 @@
 #!/bin/bash
 ###############################################################################
-#             Howdy Autolock - System-Wide Lock Launcher                      #
+#             Howdy-Wal - System-Wide Lock Launcher                      #
 # --------------------------------------------------------------------------- #
 # This script handles the transition to a dedicated TTY and monitors the      #
 # lock state to ensure the user cannot switch away easily.                    #
