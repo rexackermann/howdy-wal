@@ -1,0 +1,7 @@
+__pycache__/
+*.service
+00-howdy-autolock
+faceauth
+# Files generated during install/run
+/tmp/howdy_*
+config.sh.local
