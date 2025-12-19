@@ -40,8 +40,17 @@ if [ -f "/etc/pam.d/faceauth" ]; then
     echo -e "  ${GREEN}✓${NC} /etc/pam.d/faceauth removed."
 fi
 
-# 4. Delete Project Files
-echo -e "\n${YELLOW}[ 4/4 ] Deleting Installation Directory...${NC}"
+# 4. Remove GNOME Extension
+echo -e "\n${YELLOW}[ 4/5 ] Removing GNOME Extension...${NC}"
+EXT_ID="audio-and--window-focus-exporter@rexackermann.com"
+EXT_DEST="$HOME/.local/share/gnome-shell/extensions/$EXT_ID"
+if [ -d "$EXT_DEST" ]; then
+    rm -rf "$EXT_DEST"
+    echo -e "  ${GREEN}✓${NC} Extension removed."
+fi
+
+# 5. Delete Project Files
+echo -e "\n${YELLOW}[ 5/5 ] Deleting Installation Directory...${NC}"
 if [ -d "$INSTALL_DIR" ]; then
     sudo rm -rf "$INSTALL_DIR"
     echo -e "  ${GREEN}✓${NC} $INSTALL_DIR deleted."

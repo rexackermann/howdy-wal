@@ -1,0 +1,7 @@
+{
+  "name": "Audio and Window Focus Exporter",
+  "description": "Exports focused window and audio-playing window data to /tmp/gnome-audio-status.json",
+  "uuid": "audio-and--window-focus-exporter@rexackermann.com",
+  "shell-version": ["45", "46", "47", "48", "49"],
+  "url": ""
+}

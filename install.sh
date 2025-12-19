@@ -68,8 +68,27 @@ sudo cp "$SOURCE_DIR/LICENSE" "$INSTALL_DIR/"
 sudo chmod +x "$INSTALL_DIR"/*.sh
 sudo chown -R root:root "$INSTALL_DIR"
 
-# 4. PAM Configuration
-echo -e "\n${YELLOW}[ 3/6 ] Configuring PAM (biometric auth)...${NC}"
+# 4. GNOME Extension Installation
+echo -e "\n${YELLOW}[ 3/6 ] Installing GNOME Extension (Focus Detection)...${NC}"
+EXT_ID="audio-and--window-focus-exporter@rexackermann.com"
+EXT_DEST="$HOME/.local/share/gnome-shell/extensions/$EXT_ID"
+
+mkdir -p "$(dirname "$EXT_DEST")"
+if [ -d "$SOURCE_DIR/$EXT_ID" ]; then
+    cp -r "$SOURCE_DIR/$EXT_ID" "$(dirname "$EXT_DEST")/"
+    echo -e "  ${GREEN}✓${NC} Extension files deployed to $EXT_DEST"
+    
+    # Attempt to enable (requires GNOME session)
+    if command -v gnome-extensions &> /dev/null; then
+        gnome-extensions enable "$EXT_ID" &> /dev/null || true
+        echo -e "  ${GREEN}✓${NC} Extension enablement signal sent."
+    fi
+else
+    echo -e "  ${RED}Warning: Extension folder not found in source.${NC}"
+fi
+
+# 5. PAM Configuration
+echo -e "\n${YELLOW}[ 4/6 ] Configuring PAM (biometric auth)...${NC}"
 if [ ! -f "/etc/pam.d/faceauth" ]; then
     sudo cp "$INSTALL_DIR/faceauth" /etc/pam.d/faceauth
     echo -e "  ${GREEN}✓${NC} /etc/pam.d/faceauth created."

@@ -62,6 +62,10 @@ PAM_SERVICE="faceauth"
 # THE PAM service used for password fallback (usually 'sudo' or 'login')
 SUDO_SERVICE="sudo"
 
+# --- DATA EXPORTERS ---
+# The path where the GNOME Extension exports focused window data.
+FOCUS_DATA_FILE="/tmp/gnome-audio-status.json"
+
 # --- VISUAL ENGINES ---
 # The command used to generate the screensaver effect.
 # You can replace this with cmatrix, bonsai, etc.
