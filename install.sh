@@ -58,6 +58,10 @@ fi
 echo -e "\n${YELLOW}[ 2/6 ] Deploying to $INSTALL_DIR...${NC}"
 sudo mkdir -p "$INSTALL_DIR"
 
+# Ensure persistent and accessible logging
+sudo touch "/var/log/howdy-wal.log"
+sudo chmod 666 "/var/log/howdy-wal.log"
+
 echo "Copying scripts..."
 sudo cp "$SOURCE_DIR"/*.sh "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/faceauth" "$INSTALL_DIR/"

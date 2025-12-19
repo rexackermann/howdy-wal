@@ -72,13 +72,17 @@ trap "kill $STIKCY_PID 2>/dev/null; exit" EXIT
 # --- FAIL-CLOSED LAUNCH LOOP ---
 # We use openvt -w (wait) to block until the UI script exits.
 while true; do
-    # Ensure the log file is accessible to the user
-    touch "$LOG_FILE" 2>/dev/null
-    chmod 666 "$LOG_FILE" 2>/dev/null
+    # Ensure log file exists and is globally writable (Persistent Fix)
+    if [ ! -f "$LOG_FILE" ]; then
+        sudo touch "$LOG_FILE" 2>/dev/null
+        sudo chmod 666 "$LOG_FILE" 2>/dev/null
+    fi
 
     # CRITICAL: If a previous attempt crashed, the TTY might be stuck.
-    # We explicitly deallocate it to avoid "Couldn't deallocate console" errors.
-    deallocvt "$LOCK_VT" 2>/dev/null
+    # Code 8 usually means the VT is still 'held' by an orphaned process.
+    # We explicitly deallocate AND try to clear the state.
+    deallocvt "$LOCK_VT" 2>/dev/null || true
+    disown -a 2>/dev/null # Attempt to release any held resources
 
     log_event "INFO" "Launching Lock UI on TTY $LOCK_VT..."
     
