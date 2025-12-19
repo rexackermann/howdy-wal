@@ -1,0 +1,4 @@
+# /etc/pam.d/faceauth
+auth    sufficient      pam_howdy.so
+auth    required        pam_deny.so
+account required        pam_permit.so

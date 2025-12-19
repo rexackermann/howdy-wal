@@ -1,0 +1,156 @@
+#!/bin/bash
+###############################################################################
+#             Howdy-WAL - Terminal Lock Interface                        #
+# --------------------------------------------------------------------------- #
+# This script handles the visual screensaver and the authentication flow.     #
+# It is designed to be run on a dedicated TTY.                                #
+#                                                                             #
+# CAUTION: Terminating this script improperly might leave the TTY in a        #
+# strange state. Use the built-in unlock mechanism.                           #
+###############################################################################
+
+# Determine script location and load central configuration
+SCRIPT_DIR="$( dirname "$( readlink -f "${BASH_SOURCE[0]}" )" )"
+if [ -f "$SCRIPT_DIR/config.sh" ]; then
+    source "$SCRIPT_DIR/config.sh"
+else
+    echo "CRITICAL ERROR: config.sh not found in $SCRIPT_DIR"
+    exit 1
+fi
+
+# --- LOGGING HELPER ---
+log_event() {
+    local level="$1"
+    local message="$2"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo -e "[$timestamp] [$level] $message"
+    if [ -w "$LOG_FILE" ]; then
+        echo "[$timestamp] [$level] $message" | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g" >> "$LOG_FILE"
+    fi
+}
+
+# --- TERMINAL INITIALIZATION ---
+# Ensure ncurses and other TTY tools work correctly by setting TERM
+export TERM="${TERM:-linux}"
+if [ "$TERM" = "unknown" ]; then
+    export TERM=linux
+fi
+
+# --- CLEANUP LOGIC ---
+# Ensures children are killed and terminal is reset on exit.
+cleanup() {
+    echo "Initiating cleanup and unlocking..."
+    stty echo icanon 2>/dev/null # Restore terminal input mode
+    pkill -P $$ >/dev/null 2>&1  # Kill background processes (Matrix/Visuals)
+    sudo -k                      # Clear sudo timestamp for security
+    setterm -cursor on 2>/dev/null # Restore cursor
+    clear
+}
+trap cleanup EXIT
+
+# --- INITIALIZATION ---
+clear
+setterm -cursor off  # Hide the blinking cursor for maximum aesthetic
+
+# --- AUTH FALLBACK: PASSWORD ---
+# Since this script runs as root to maintain TTY control, we use pamtester
+# to verify the user's password without relying on sudo's cached timestamp.
+attempt_password_auth() {
+    echo -e "\n\e[1;33m[ AUTH ]\e[0m Fallback: Password Authentication Required"
+    echo -e "Target User: \e[1;36m${TARGET_USER:-$USER}\e[0m"
+    
+    if pamtester "$SUDO_SERVICE" "${TARGET_USER:-$USER}" authenticate; then
+        echo -e "\e[1;32m[ SUCCESS ]\e[0m Identity Verified."
+        return 0
+    else
+        echo -e "\e[1;31m[ ERROR ]\e[0m Incorrect Password."
+        return 1
+    fi
+}
+
+# --- MAIN LOOP ---
+while true; do
+    # 1. Start the Visual Engine (The "Screensaver") in the background
+    echo "Launching visual engine: $VISUAL_ENGINE..."
+    
+    # Run the engine and capture its PID
+    $VISUAL_ENGINE $VISUAL_ENGINE_ARGS &
+    VE_PID=$!
+    
+    # 2. Wait for ANY key press OR visual engine termination
+    # We use a non-blocking loop to avoid hanging if the engine crashes.
+    # We also monitor for touch/touchpad/mouse events via libinput.
+    
+    # Launch libinput monitor in background
+    # It waits for the first real interaction event (motion, click, touch, key).
+    (
+        libinput debug-events 2>/dev/null | grep --line-buffered -E "POINTER_|TOUCH_|KEYBOARD_|GESTURE_|TABLET_" | head -n 1 > /dev/null
+        # When an event happens, kill the visual engine to trigger auth
+        if kill -0 "$VE_PID" 2>/dev/null; then
+            kill "$VE_PID" 2>/dev/null
+        fi
+    ) &
+    INPUT_PID=$!
+
+    while kill -0 "$VE_PID" 2>/dev/null; do
+        stty -echo -icanon
+        if read -t 0.5 -n 1 -s choice; then
+            break # User pressed a key
+        fi
+    done
+    stty echo icanon
+    
+    # Clean up input monitor if it's still running
+    kill "$INPUT_PID" 2>/dev/null
+    wait "$INPUT_PID" 2>/dev/null
+    
+    # Kill the visual engine if it's still running (e.g. if we broke out via 'read')
+    kill "$VE_PID" 2>/dev/null
+    wait "$VE_PID" 2>/dev/null
+    
+    # Restore terminal state for the menu/auth prompts
+    setterm -cursor on 2>/dev/null
+    
+    # 3. Trigger Face Check
+    clear
+    log_event "INFO" "Triggering facial verification..."
+    
+    if "$HOWDY_WRAPPER_SCRIPT"; then
+        log_event "SUCCESS" "User verified via Howdy. Signaling success to launcher..."
+        touch "$AUTH_SUCCESS_FILE" 2>/dev/null
+        exit 0
+    fi
+    
+    # 4. Interactive Auth Menu on Failure
+    log_event "WARN" "Facial verification failed. Entering menu."
+    echo "----------------------------------------------------"
+    echo -e "Options: [\e[1;36mR\e[0m]etry Face | [\e[1;36mP\e[0m]assword Auth | [\e[1;36mSpace\e[0m] Re-lock"
+    echo "Waiting for input..."
+    
+    # Read input with timeout (default 10s from config)
+    read -t "$MENU_TIMEOUT" -n 1 -s choice
+    
+    case "$choice" in
+        p|P)
+            if attempt_password_auth; then
+                log_event "SUCCESS" "User verified via Password. Signaling success..."
+                touch "$AUTH_SUCCESS_FILE" 2>/dev/null
+                exit 0
+            fi
+            ;;
+        r|R)
+            echo -e "\n\e[1;34m[ SCANNING ]\e[0m Re-attempting facial verification..."
+            if "$HOWDY_WRAPPER_SCRIPT"; then
+                echo -e "\e[1;32m[ VERIFIED ]\e[0m Welcome back."
+                exit 0
+            else
+                echo -e "\e[1;31m[ STILL FAILED ]\e[0m Authentication unsuccessful."
+                sleep 1
+            fi
+            ;;
+        *)
+            # Timeout or any other key returns to screensaver
+            echo "Returning to lock state..."
+            ;;
+    esac
+done

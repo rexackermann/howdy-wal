@@ -1,0 +1,12 @@
+# System logs and status files
+*.log
+/tmp/howdy_*
+/tmp/gnome-audio-status.json
+
+# Build and environment files
+.agent/
+.gemini/
+.DS_Store
+
+# Local overrides
+local_config.sh
