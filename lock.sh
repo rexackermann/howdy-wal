@@ -10,6 +10,7 @@
 SCRIPT_DIR="$( dirname "$( readlink -f "${BASH_SOURCE[0]}" )" )"
 if [ -f "$SCRIPT_DIR/config.sh" ]; then
     source "$SCRIPT_DIR/config.sh"
+    cleanup_logs
 else
     echo "CRITICAL ERROR: config.sh not found in $SCRIPT_DIR"
     exit 1
