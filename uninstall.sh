@@ -42,7 +42,7 @@ fi
 
 # 4. Remove GNOME Extension
 echo -e "\n${YELLOW}[ 4/5 ] Removing GNOME Extension...${NC}"
-EXT_ID="audio-and--window-focus-exporter@rexackermann.com"
+EXT_ID="focus-exporter@howdy-wal.local"
 EXT_DEST="$HOME/.local/share/gnome-shell/extensions/$EXT_ID"
 if [ -d "$EXT_DEST" ]; then
     rm -rf "$EXT_DEST"

@@ -1,133 +1,90 @@
 # 🛡️ Howdy-WAL
+### Hardened Terminal-Based Biometric Lockscreen for Linux
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Bash](https://img.shields.io/badge/Language-Bash-4EAA25.svg)](https://www.gnu.org/software/bash/)
+[![Security: Hardened](https://img.shields.io/badge/Security-Hardened-red.svg)](#features)
 
-A hardened, terminal-based biometric lockscreen for GNOME/Wayland. This project replaces the standard desktop lockscreen with a high-performance terminal visual engine (like `tmatrix`) running on a dedicated Virtual Terminal (TTY), secured by `howdy` facial recognition.
-
-> [!IMPORTANT]
-> This project is designed for **Fedora/GNOME/Wayland** but can be adapted for other distributions. It leverages TTY switching to bypass GUI-level escapes like `Alt-Tab` or `Super` keys.
+Howdy-WAL (Wait-And-Lock) is a high-performance terminal visual engine lockscreen secured by `howdy` facial recognition. By switching the session to a dedicated Virtual Terminal (TTY), it bypasses all GUI-level escapes (like `Alt+Tab`, `Super`, or notification snooping), providing a truly hardened session lock.
 
 ---
 
 ## ✨ Features
 
-- **🚀 Biometric Security**: Seamless unlocking via `howdy` facial recognition.
-- **🔒 Hardened TTY Locking**: Switches session to TTY 9, rendering standard desktop bypasses useless.
-- **🛡️ Fail-Closed Design**: If the lock UI crashes or is killed, it automatically respawns. Access to the desktop is only granted upon successful authentication.
-- **🎬 Smart Media Detection**: Identifies foreground video/media by matching audio streams with D-Bus inhibitors. This ensures background music (like Spotify) allows locking, while foreground video (like YouTube) prevents it.
-- **✨ Seamless Unlock**: Press **any key** (not just 'q') to trigger biometric verification.
-- **⚡ Instant Lock**: Rig a shortcut to `howdy-lock` for immediate session hardening.
-- **📟 Interchangeable Visuals**: Use `tmatrix`, `cmatrix`, `bonsai`, or any CLI tool as your screensaver.
-- **☕ Caffeine Mode**: Quickly pause auto-locking for movie nights or presentations.
-- **⌨️ Interactive Fallback**: Secure password entry via PAM if face verification fails.
-- **📜 Audit Logging**: All events are logged to `/opt/howdy-WAL/logs/howdy-wal.log` for debugging and history.
-- **🛠️ System-wide Install**: Deploy to `/opt/howdy-WAL` for clean system integration.
+- **🚀 Biometric Security**: Seamless unlocking via `howdy` facial recognition mapping.
+- **🔒 Hardened TTY Locking**: Switches to TTY 9, rendering desktop-level bypasses useless.
+- **🛡️ Fail-Closed Design**: Automatic respawn on crash. Access is only possible via valid authentication.
+- **🎬 Smart Media Detection**: Blocks auto-locking for foreground video (YouTube/Movies) while allowing it for background audio (Spotify).
+- **📟 Interchangeable Visuals**: Support for `tmatrix`, `cmatrix`, `bonsai`, or any CLI screensaver.
+- **☕ Caffeine Mode**: Quickly pause auto-locking for presentations or "stay awake" sessions.
+- **⌨️ Interactive Fallback**: Secure password entry via terminal-safe PAM verification.
+- **📜 Audit Logging**: Persistent event tracking at `/var/log/howdy-wal.log`.
+- **🎧 BT Preservation**: Automatic reconnection of Bluetooth devices after the VT switch.
 
 ---
 
-## Troubleshooting
-
-### 🔄 Matrix Loop
-If the system keeps returning to the lock screen immediately after unlock, check the logs. This usually happens if the system doesn't register user activity (mouse/keyboard) fast enough. We've implemented a **30s Grace Period** after every unlock to prevent this.
-
-### 🎧 Bluetooth Disconnects
-Switching to a TTY marks your graphical session as "inactive", which might cause Bluetooth or Audio to suspend.
-- **Fix**: Howdy-WAL uses `systemd-inhibit` to try and prevent this.
-- **Pro Tip**: If your Bluetooth audio still drops, you may need to disable WirePlumber's suspension policy in your user config.
-
----
-
-## ⚠️ Caution & Warnings
+## ⚠️ Safety First
 
 > [!CAUTION]
-> **USE AT YOUR OWN RISK**: This project uses a "Sticky TTY" enforcement loop. If you switch away from the lock screen, it will pull you back within 0.5s.
+> **TTY ENFORCEMENT**: This project uses a "Sticky TTY" loop. If you switch away from the lock screen without authenticating, it will pull you back within 0.5s.
 > 
-> **For Recovery**: Use your **Emergency VT** (default: `Ctrl+Alt+F3`) to log in and kill the processes if you get stuck. Access to this specific TTY is allowed by the enforcement monitor for debugging.
-
-> [!WARNING]
-> **SUDOERS RISK**: The installer creates a `NOPASSWD` rule for the lock launcher. This is necessary to allow the background monitor to secure your system while you are away. Ensure your project directory permissions remain restricted to `root`.
+> **EMERGENCY RECOVERY**: If you get stuck, switch to your **Emergency VT** (default: `Ctrl+Alt+F3`). Access to this specific TTY is permitted for debugging and recovery.
 
 ---
 
 ## 🛠️ Installation
 
-### 1. Prerequisites & Howdy Setup
-This project depends on **Howdy**, which is not available in most official distribution repositories. You must install and configure it manually first.
-
-> [!IMPORTANT]
-> **HOWDY INSTALLATION**:
-> - **Official Repository**: [boltgolt/howdy](https://github.com/boltgolt/howdy)
-> - **Fedora (COPR)**: Most users on Fedora use the `principis/howdy` COPR:
->   ```bash
->   sudo dnf copr enable principis/howdy
->   sudo dnf install howdy pamtester tmatrix
->   ```
-> - **Verification**: Ensure `sudo howdy test` works before proceeding with this installer.
-
-### 2. Guided Install
-Clone the repository and run the installer:
+### 1. Prerequisites
+Ensure `howdy` and `pamtester` are installed and configured on your system.
+For Fedora users:
 ```bash
-git clone https://github.com/rexackermann/howdy-WAL.git
+sudo dnf copr enable principis/howdy
+sudo dnf install howdy pamtester tmatrix
+```
+
+### 2. Guided Setup
+```bash
+git clone https://github.com/USER/howdy-WAL.git
 cd howdy-WAL
 ./install.sh
 ```
-The installer will deploy to `/opt/howdy-WAL`, set up PAM services, configure sudoers, and enable the systemd user daemon.
 
 ---
 
 ## ⚙️ Configuration
 
-All settings are centralized in `/opt/howdy-WAL/config.sh`. 
+Tunable settings are centralized in `/opt/howdy-WAL/config.sh`.
 
 | Variable | Description | Default |
 | :--- | :--- | :--- |
-| `IDLE_THRESHOLD_MS` | Inactivity before locking | `10000` (10s) |
-| `SMART_MEDIA` | Prevent lock for foreground video | `true` |
-| `VISUAL_ENGINE` | Command for screensaver | `tmatrix` |
-| `LOCK_VT` | TTY used for the lock | `9` |
-| `MENU_TIMEOUT` | Menu wait time | `10`s |
-
-### Swapping Visuals
-To use `cmatrix` instead of `tmatrix`:
-1. Open `/opt/howdy-WAL/config.sh`.
-2. Change `VISUAL_ENGINE="cmatrix"`.
-3. Change `VISUAL_ENGINE_ARGS="-s -C blue"`.
+| `IDLE_THRESHOLD_MS` | Inactivity (ms) before lock | `10000` (10s) |
+| `SMART_MEDIA` | Don't lock during video | `true` |
+| `VISUAL_ENGINE` | Visual engine command | `tmatrix` |
+| `LOCK_VT` | Virtual Terminal index | `9` |
+| `EMERGENCY_VT` | VT for debugging | `3` |
 
 ---
 
 ## 🖱️ Usage
 
-### Manual Lock
-```bash
-/opt/howdy-WAL/lock_screen.sh
-```
+### Quick Commands
+- **Lock Now**: `/opt/howdy-WAL/lock_now.sh` (Rig this to a keyboard shortcut!)
+- **Toggle Caffeine**: `/opt/howdy-WAL/caffeine.sh`
+- **View Logs**: `tail -f /var/log/howdy-wal.log`
 
-### Caffeine Toggle
-Prevent auto-locking temporarily:
-```bash
-/opt/howdy-WAL/caffeine.sh
-```
-
-### Interactive Menu
-While locked, press **`Q`** to trigger verification. If it fails:
-- Press **`R`** to retry face scan.
-- Press **`P`** to enter your system password.
-- Wait **10s** to return to the screensaver.
+### Unlock Flow
+- **Press Any Key**: Stops the screensaver and triggers the camera.
+- **Biometric Fail**: An interactive menu will appear allowing **[P]assword** or **[R]etry**.
 
 ---
 
 ## 🗑️ Uninstallation
-
-To completely remove the project and all system hooks:
+Remove all hooks and files:
 ```bash
-cd /opt/howdy-WAL
-sudo ./uninstall.sh
+sudo /opt/howdy-WAL/uninstall.sh
 ```
 
 ---
 
 ## 📄 License
-Distributed under the **MIT License**. See [LICENSE](./LICENSE) for more information.
-
-**Author:** Rex Ackermann
+Distributed under the **MIT License**. Created by the Howdy-WAL Contributors.

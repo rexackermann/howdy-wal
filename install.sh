@@ -16,9 +16,9 @@ BLUE='\e[1;34m'
 CYAN='\e[1;36m'
 NC='\e[0m' # No Color
 
-echo -e "${BLUE}====================================================${NC}"
-echo -e "${CYAN}          Howdy-WAL - System Installer              ${NC}"
-echo -e "${BLUE}====================================================${NC}"
+echo -e "${BLUE}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
+echo -e "${CYAN}┃          Howdy-WAL - Core System Installer         ┃${NC}"
+echo -e "${BLUE}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
 
 # 1. Dependency Check
 echo -e "\n${YELLOW}[ 1/6 ] Checking Dependencies...${NC}"
@@ -63,12 +63,20 @@ sudo touch "/var/log/howdy-wal.log"
 sudo chmod 666 "/var/log/howdy-wal.log"
 
 echo "Copying scripts..."
-sudo cp "$SOURCE_DIR"/*.sh "$INSTALL_DIR/"
+# Copy all core scripts except the installer itself
+sudo cp "$SOURCE_DIR/lock_screen.sh" "$INSTALL_DIR/"
+sudo cp "$SOURCE_DIR/lock_ui.sh" "$INSTALL_DIR/"
+sudo cp "$SOURCE_DIR/howdy_wrapper.sh" "$INSTALL_DIR/"
+sudo cp "$SOURCE_DIR/screen_watcher.sh" "$INSTALL_DIR/"
+sudo cp "$SOURCE_DIR/media_check.sh" "$INSTALL_DIR/"
+sudo cp "$SOURCE_DIR/caffeine.sh" "$INSTALL_DIR/"
+sudo cp "$SOURCE_DIR/bluetooth_reconnect.sh" "$INSTALL_DIR/"
+sudo cp "$SOURCE_DIR/lock_now.sh" "$INSTALL_DIR/"
+sudo cp "$SOURCE_DIR/uninstall.sh" "$INSTALL_DIR/"
+sudo cp "$SOURCE_DIR/config.sh" "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/faceauth" "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/howdy-WAL.service" "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/00-howdy-WAL" "$INSTALL_DIR/"
-sudo cp "$SOURCE_DIR/lock_now.sh" "$INSTALL_DIR/"
-sudo cp "$SOURCE_DIR/bluetooth_reconnect.sh" "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/LICENSE" "$INSTALL_DIR/"
 
 # Set permissions
@@ -77,7 +85,7 @@ sudo chown -R root:root "$INSTALL_DIR"
 
 # 4. GNOME Extension Installation
 echo -e "\n${YELLOW}[ 3/6 ] Installing GNOME Extension (Focus Detection)...${NC}"
-EXT_ID="audio-and--window-focus-exporter@rexackermann.com"
+EXT_ID="focus-exporter@howdy-wal.local"
 EXT_DEST="$HOME/.local/share/gnome-shell/extensions/$EXT_ID"
 
 mkdir -p "$(dirname "$EXT_DEST")"

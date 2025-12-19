@@ -1,13 +1,12 @@
-__pycache__/
-# Ignore generated/active system files
+# System logs and status files
+*.log
 /tmp/howdy_*
-config.sh.local
+/tmp/gnome-audio-status.json
 
-# We want to keep the templates in the repo, but ignore their system-installed counterparts?
-# Actually, the repo usually just has the templates.
-# If they have .service extension, they will be blocked by *.service.
-# Let's be explicit.
-# Allow the templates in the root
-!howdy-WAL.service
-!00-howdy-WAL
-!faceauth
+# Build and environment files
+.agent/
+.gemini/
+.DS_Store
+
+# Local overrides
+local_config.sh
