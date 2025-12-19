@@ -1,8 +1,8 @@
 #!/bin/bash
 ###############################################################################
-# uninstall.sh - Uninstaller for Howdy-Wal
+# uninstall.sh - Uninstaller for Howdy-WAL
 # --------------------------------------------------------------------------- #
-# Removes Howdy-Wal from /opt/howdy-wal and cleans up integrations.           #
+# Removes Howdy-WAL from /opt/howdy-WAL and cleans up integrations.           #
 ###############################################################################
 
 # --- COLOR DEFINITIONS ---
@@ -13,23 +13,23 @@ BLUE='\e[1;34m'
 NC='\e[0m'
 
 echo -e "${BLUE}====================================================${NC}"
-echo -e "${YELLOW}          Howdy-Wal - System Uninstaller            ${NC}"
+echo -e "${YELLOW}          Howdy-WAL - System Uninstaller            ${NC}"
 echo -e "${BLUE}====================================================${NC}"
 
-INSTALL_DIR="/opt/howdy-wal"
+INSTALL_DIR="/opt/howdy-WAL"
 
 # 1. Stop Service
 echo -e "\n${YELLOW}[ 1/4 ] Stopping & Disabling Service...${NC}"
-systemctl --user stop howdy-wal.service 2>/dev/null
-systemctl --user disable howdy-wal.service 2>/dev/null
-rm -f "$HOME/.config/systemd/user/howdy-wal.service"
+systemctl --user stop howdy-WAL.service 2>/dev/null
+systemctl --user disable howdy-WAL.service 2>/dev/null
+rm -f "$HOME/.config/systemd/user/howdy-WAL.service"
 systemctl --user daemon-reload
 echo -e "  ${GREEN}✓${NC} Systemd service removed."
 
 # 2. Remove Sudoers Rule
 echo -e "\n${YELLOW}[ 2/4 ] Removing Sudoers Rule...${NC}"
-if [ -f "/etc/sudoers.d/00-howdy-wal" ]; then
-    sudo rm "/etc/sudoers.d/00-howdy-wal"
+if [ -f "/etc/sudoers.d/00-howdy-WAL" ]; then
+    sudo rm "/etc/sudoers.d/00-howdy-WAL"
     echo -e "  ${GREEN}✓${NC} Sudoers rule removed."
 fi
 
@@ -47,4 +47,4 @@ if [ -d "$INSTALL_DIR" ]; then
     echo -e "  ${GREEN}✓${NC} $INSTALL_DIR deleted."
 fi
 
-echo -e "\n${GREEN}Cleanup complete. Howdy-Wal has been uninstalled.${NC}\n"
+echo -e "\n${GREEN}Cleanup complete. Howdy-WAL has been uninstalled.${NC}\n"

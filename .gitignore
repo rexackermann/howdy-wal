@@ -8,6 +8,6 @@ config.sh.local
 # If they have .service extension, they will be blocked by *.service.
 # Let's be explicit.
 # Allow the templates in the root
-!howdy-wal.service
-!00-howdy-wal
+!howdy-WAL.service
+!00-howdy-WAL
 !faceauth

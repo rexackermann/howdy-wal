@@ -1,15 +1,15 @@
 #!/bin/bash
 ###############################################################################
-#             Howdy-Wal - Central Configuration File                     #
+#             Howdy-WAL - Central Configuration File                     #
 # --------------------------------------------------------------------------- #
-# This file contains all the tunable variables for the howdy-wal system.       #
+# This file contains all the tunable variables for the howdy-WAL system.       #
 # Changes here will be reflected across all components.                       #
 ###############################################################################
 
 # --- INSTALLATION SETTINGS ---
 # The path where the project is installed. 
-# For system-wide use, this is typically /opt/howdy-wal
-INSTALL_DIR="/opt/howdy-wal"
+# For system-wide use, this is typically /opt/howdy-WAL
+INSTALL_DIR="/opt/howdy-WAL"
 
 # --- TIMING & BEHAVIOR ---
 # Idle time in milliseconds before triggering the lock (10000 = 10s)

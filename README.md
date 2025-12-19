@@ -1,4 +1,4 @@
-# 🛡️ Howdy-Wal
+# 🛡️ Howdy-WAL
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Bash](https://img.shields.io/badge/Language-Bash-4EAA25.svg)](https://www.gnu.org/software/bash/)
@@ -18,7 +18,7 @@ A hardened, terminal-based biometric lockscreen for GNOME/Wayland. This project 
 - **📟 Interchangeable Visuals**: Use `tmatrix`, `cmatrix`, `bonsai`, or any CLI tool as your screensaver.
 - **☕ Caffeine Mode**: Quickly pause auto-locking for movie nights or presentations.
 - **⌨️ Interactive Fallback**: Secure password entry via PAM if face verification fails.
-- **🛠️ System-wide Install**: Deploy to `/opt/howdy-wal` for clean system integration.
+- **🛠️ System-wide Install**: Deploy to `/opt/howdy-WAL` for clean system integration.
 
 ---
 
@@ -52,17 +52,17 @@ This project depends on **Howdy**, which is not available in most official distr
 ### 2. Guided Install
 Clone the repository and run the installer:
 ```bash
-git clone https://github.com/rexackermann/howdy-wal.git
-cd howdy-wal
+git clone https://github.com/rexackermann/howdy-WAL.git
+cd howdy-WAL
 ./install.sh
 ```
-The installer will deploy to `/opt/howdy-wal`, set up PAM services, configure sudoers, and enable the systemd user daemon.
+The installer will deploy to `/opt/howdy-WAL`, set up PAM services, configure sudoers, and enable the systemd user daemon.
 
 ---
 
 ## ⚙️ Configuration
 
-All settings are centralized in `/opt/howdy-wal/config.sh`. 
+All settings are centralized in `/opt/howdy-WAL/config.sh`. 
 
 | Variable | Description | Default |
 | :--- | :--- | :--- |
@@ -73,7 +73,7 @@ All settings are centralized in `/opt/howdy-wal/config.sh`.
 
 ### Swapping Visuals
 To use `cmatrix` instead of `tmatrix`:
-1. Open `/opt/howdy-wal/config.sh`.
+1. Open `/opt/howdy-WAL/config.sh`.
 2. Change `VISUAL_ENGINE="cmatrix"`.
 3. Change `VISUAL_ENGINE_ARGS="-s -C blue"`.
 
@@ -83,13 +83,13 @@ To use `cmatrix` instead of `tmatrix`:
 
 ### Manual Lock
 ```bash
-/opt/howdy-wal/lock_screen.sh
+/opt/howdy-WAL/lock_screen.sh
 ```
 
 ### Caffeine Toggle
 Prevent auto-locking temporarily:
 ```bash
-/opt/howdy-wal/caffeine.sh
+/opt/howdy-WAL/caffeine.sh
 ```
 
 ### Interactive Menu
@@ -104,7 +104,7 @@ While locked, press **`Q`** to trigger verification. If it fails:
 
 To completely remove the project and all system hooks:
 ```bash
-cd /opt/howdy-wal
+cd /opt/howdy-WAL
 sudo ./uninstall.sh
 ```
 

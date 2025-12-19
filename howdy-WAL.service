@@ -1,5 +1,5 @@
 [Unit]
-Description=Howdy-Wal Monitor
+Description=Howdy-WAL Monitor
 After=graphical-session.target
 
 [Service]

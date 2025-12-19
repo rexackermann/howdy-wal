@@ -1,6 +1,6 @@
 #!/bin/bash
 ###############################################################################
-#             Howdy-Wal - Biometric PAM Wrapper                          #
+#             Howdy-WAL - Biometric PAM Wrapper                          #
 # --------------------------------------------------------------------------- #
 # This script invokes pamtester with the designated biometric service.        #
 # It is used by the monitor and the UI for presence verification.             #

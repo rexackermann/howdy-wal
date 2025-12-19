@@ -1,6 +1,6 @@
 #!/bin/bash
 ###############################################################################
-#             Howdy-Wal - Terminal Lock Interface                        #
+#             Howdy-WAL - Terminal Lock Interface                        #
 # --------------------------------------------------------------------------- #
 # This script handles the visual screensaver and the authentication flow.     #
 # It is designed to be run on a dedicated TTY.                                #
