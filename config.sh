@@ -11,6 +11,11 @@
 # For system-wide use, this is typically /opt/howdy-WAL
 INSTALL_DIR="/opt/howdy-WAL"
 
+# --- LOCKING MECHANISM ---
+# If true, uses standard GNOME lock screen. 
+# If false, uses the V1 TTY-switching mechanism.
+NATIVE_LOCK=false
+
 # --- TIMING & BEHAVIOR ---
 # Idle time in milliseconds before triggering the lock (10000 = 10s)
 IDLE_THRESHOLD_MS=10000

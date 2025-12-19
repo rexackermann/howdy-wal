@@ -29,6 +29,19 @@ log_event() {
     fi
 }
 
+# --- NATIVE LOCK OVERRIDE ---
+if [ "$NATIVE_LOCK" = "true" ]; then
+    log_event "INFO" "NATIVE_LOCK enabled. Triggering system lock..."
+    # Attempt to lock via D-Bus. Note: We run this as the real user if sudoed.
+    LOCK_CMD="gdbus call --session --dest org.gnome.ScreenSaver --object-path /org/gnome/ScreenSaver --method org.gnome.ScreenSaver.Lock"
+    if [ "$EUID" -eq 0 ] && [ -n "$SUDO_USER" ]; then
+        sudo -u "$SUDO_USER" $LOCK_CMD >/dev/null 2>&1
+    else
+        $LOCK_CMD >/dev/null 2>&1
+    fi
+    exit 0
+fi
+
 # --- ROOT ELEVATION ---
 if [ "$EUID" -ne 0 ]; then
     echo -e "\e[1;33m[ SYSTEM ]\e[0m Elevating privileges..."

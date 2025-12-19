@@ -1,7 +1,0 @@
-{
-  "name": "Audio and Window Focus Exporter",
-  "description": "Exports focused window and audio-playing window data to /tmp/gnome-audio-status.json",
-  "uuid": "focus-exporter@howdy-wal.local",
-  "shell-version": ["45", "46", "47", "48", "49"],
-  "url": ""
-}
