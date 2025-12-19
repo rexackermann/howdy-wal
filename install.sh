@@ -22,8 +22,8 @@ echo -e "${BLUE}====================================================${NC}"
 
 # 1. Dependency Check
 echo -e "\n${YELLOW}[ 1/6 ] Checking Dependencies...${NC}"
-DEPS=("howdy" "pamtester" "gdbus" "openvt" "fgconsole" "sed" "awk")
-for dep in "${DEPS[@]}"; do
+DEPENDENCIES=("howdy" "pamtester" "tmatrix" "gdbus" "openvt" "fgconsole" "sed" "awk" "jq")
+for dep in "${DEPENDENCIES[@]}"; do
     if ! command -v "$dep" &> /dev/null; then
         echo -e "${RED}Error: Dependency '$dep' not found.${NC}"
         if [ "$dep" == "howdy" ]; then

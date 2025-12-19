@@ -1,8 +1,8 @@
 #!/bin/bash
 ###############################################################################
-#             Howdy-WAL - Smart Media Diagnostic (Modular)                    #
+#             Howdy-WAL - Smart Media Diagnostic (PipeWire Edition)           #
 # --------------------------------------------------------------------------- #
-# This diagnostic tool uses the same media_check.sh logic as the monitor.     #
+# This diagnostic tool uses the modular media_check.sh (PipeWire/pw-dump).    #
 ###############################################################################
 
 # Load config and core module
@@ -19,22 +19,32 @@ CYAN='\e[1;36m'
 NC='\e[0m'
 
 echo -e "${BLUE}====================================================${NC}"
-echo -e "${CYAN}        Howdy-WAL - Core Media Diagnostic           ${NC}"
+echo -e "${CYAN}        Howdy-WAL - PipeWire Media Diagnostic       ${NC}"
 echo -e "${BLUE}====================================================${NC}"
 
-# 1. Inspect Audio Streams
-echo -e "${YELLOW}[ 1/4 ] Audio Applications:${NC}"
-AUDIO_APPS=$(get_audio_apps)
-if [ -n "$AUDIO_APPS" ]; then
-    for app in $AUDIO_APPS; do
-        if pactl list sink-inputs 2>/dev/null | grep -A 20 "application.name = \"$app\"" | grep -q "state: RUNNING"; then
-             echo -e "  ${GREEN}✓${NC} $app (RUNNING)"
-        else
-             echo -e "  ${YELLOW}-${NC} $app (CORED/PAUSED)"
-        fi
-    done
+# 1. Inspect Audio Streams (via pw-dump)
+echo -e "${YELLOW}[ 1/4 ] PipeWire Audio Streams:${NC}"
+if ! command -v jq >/dev/null 2>&1; then
+    echo -e "  ${RED}Error: jq is not installed. Data will be messy.${NC}"
+    pw-dump | grep -E "application.name|state" | head -n 10
 else
-    echo -e "  ${RED}No audio applications detected.${NC}"
+    # Extract name and state from Stream/Output/Audio nodes
+    streams=$(pw-dump 2>/dev/null | jq -r '.[] | select(.info.props."media.class" == "Stream/Output/Audio") | "\(.info.props."application.name")|\(.info.state)"')
+    
+    if [ -n "$streams" ]; then
+        while read -r line; do
+            [ -z "$line" ] && continue
+            name=$(echo "$line" | cut -d'|' -f1)
+            state=$(echo "$line" | cut -d'|' -f2)
+            if [ "$state" == "running" ]; then
+                echo -e "  ${GREEN}✓${NC} $name ($state)"
+            else
+                echo -e "  ${YELLOW}-${NC} $name ($state)"
+            fi
+        done <<< "$streams"
+    else
+        echo -e "  ${RED}No active audio streams detected.${NC}"
+    fi
 fi
 
 # 2. Inspect Inhibitors

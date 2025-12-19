@@ -14,9 +14,21 @@ SCRIPT_DIR="$( dirname "$( readlink -f "${BASH_SOURCE[0]}" )" )"
 [ -f "$SCRIPT_DIR/config.sh" ] && source "$SCRIPT_DIR/config.sh"
 
 # --- HELPER: GET AUDIO APPs ---
-# Extracts application.name and application.id from pactl
+# Uses pw-dump and jq to extract application IDs and names from active streams
 get_audio_apps() {
-    pactl list sink-inputs 2>/dev/null | grep -E "application.name =|application.id =" | cut -d'"' -f2 | tr '\n' ' '
+    if ! command -v jq >/dev/null 2>&1; then
+        # Fallback to a crude grep if jq is missing (not ideal)
+        pw-dump 2>/dev/null | grep -E "application.name|application.id" | cut -d'"' -f4 | tr '\n' ' '
+        return
+    fi
+
+    # Extract application.id and application.name from nodes that are Stream/Output/Audio
+    # We only care about nodes that are NOT suspended if ONLY_RUNNING_AUDIO is true
+    if [ "$ONLY_RUNNING_AUDIO" = true ]; then
+        pw-dump 2>/dev/null | jq -r '.[] | select(.info.props."media.class" == "Stream/Output/Audio" and .info.state == "running") | .info.props | "\(.["application.id"]) \(.["application.name"])"' | tr '\n' ' '
+    else
+        pw-dump 2>/dev/null | jq -r '.[] | select(.info.props."media.class" == "Stream/Output/Audio") | .info.props | "\(.["application.id"]) \(.["application.name"])"' | tr '\n' ' '
+    fi
 }
 
 # --- HELPER: GET INHIBITOR APPs ---
@@ -37,40 +49,39 @@ get_inhibitors() {
 
 # --- MAIN HEURISTIC ---
 check_media() {
-    # 0. Global Disable
-    [ "$SMART_MEDIA" != "true" ] && return 1
-
-    # 1. Quick Audio Presence Check
-    local audio_present
-    if [ "$ONLY_RUNNING_AUDIO" = true ]; then
-        audio_present=$(pactl list sink-inputs 2>/dev/null | grep -c "state: RUNNING")
-    else
-        audio_present=$(pactl list sink-inputs 2>/dev/null | grep -c "sink-input")
+    # 0. Dependency Check
+    if ! command -v pw-dump >/dev/null 2>&1; then
+        # Fallback to pactl if pw-dump is missing
+        pactl list sink-inputs 2>/dev/null | grep -q "sink-input" && return 0 || return 1
     fi
-    [ "$audio_present" -eq 0 ] && return 1
+
+    # 1. Global Disable
+    [ "$SMART_MEDIA" != "true" ] && return 1
 
     # 2. Extract active audio apps and inhibitors
     local audio_apps=$(get_audio_apps | tr '[:upper:]' '[:lower:]')
     local inhibitors=$(get_inhibitors)
     
+    # If no audio is detected, we don't care about inhibitors for media logic
+    [ -z "$audio_apps" ] && return 1
+
     # 3. Decision Logic
     local match_found=false
     
     while read -r line; do
         [ -z "$line" ] && continue
-        local app=$(echo "$line" | cut -d'|' -f1 | tr '[:upper:]' '[:lower:]')
-        local reason=$(echo "$line" | cut -d'|' -f2 | tr '[:upper:]' '[:lower:]')
+        local inhibitor_app=$(echo "$line" | cut -d'|' -f1 | tr '[:upper:]' '[:lower:]')
 
         # Skip ignored inhibitors (general purpose caffeine, etc)
-        if echo "$IGNORE_INHIBITORS" | tr '[:upper:]' '[:lower:]' | grep -q "$app"; then
+        if echo "$IGNORE_INHIBITORS" | tr '[:upper:]' '[:lower:]' | grep -q "$inhibitor_app"; then
             continue
         fi
 
         # If matching is enabled, we need to find the app in the audio list
         if [ "$MATCH_MEDIA_INHIBITOR" = true ]; then
-            # We look for a cross-match between inhibitor AppID and pactl app names
+            # We look for a cross-match between inhibitor AppID and pw-dump app IDs/names
             for a_app in $audio_apps; do
-                if [[ "$app" == *"$a_app"* ]] || [[ "$a_app" == *"$app"* ]]; then
+                if [[ "$inhibitor_app" == *"$a_app"* ]] || [[ "$a_app" == *"$inhibitor_app"* ]]; then
                     match_found=true
                     break 2
                 fi
