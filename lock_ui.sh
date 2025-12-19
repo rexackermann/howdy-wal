@@ -29,9 +29,10 @@ fi
 # Ensures children are killed and terminal is reset on exit.
 cleanup() {
     echo "Initiating cleanup and unlocking..."
+    stty echo icanon 2>/dev/null # Restore terminal input mode
     pkill -P $$ >/dev/null 2>&1  # Kill background processes (Matrix/Visuals)
     sudo -k                      # Clear sudo timestamp for security
-    setterm -cursor on           # Restore cursor
+    setterm -cursor on 2>/dev/null # Restore cursor
     clear
 }
 trap cleanup EXIT
@@ -65,16 +66,22 @@ while true; do
     $VISUAL_ENGINE $VISUAL_ENGINE_ARGS &
     VE_PID=$!
     
-    # 2. Wait for ANY key press
-    # We use 'read' to wait for a single character.
-    # We turn off echo and use raw mode to ensure we catch everything.
-    stty -echo -icanon
-    read -n 1 -s choice
+    # 2. Wait for ANY key press OR visual engine termination
+    # We use a non-blocking loop to avoid hanging if the engine crashes.
+    while kill -0 "$VE_PID" 2>/dev/null; do
+        stty -echo -icanon
+        if read -t 0.5 -n 1 -s choice; then
+            break # User pressed a key
+        fi
+    done
     stty echo icanon
     
     # Kill the visual engine immediately
     kill "$VE_PID" 2>/dev/null
     wait "$VE_PID" 2>/dev/null
+    
+    # Restore terminal state for the menu/auth prompts
+    setterm -cursor on 2>/dev/null
     
     # 3. Trigger Face Check
     clear

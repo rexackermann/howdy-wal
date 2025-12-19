@@ -57,10 +57,10 @@ while true; do
     echo -e "\e[1;34m[ LAUNCH ]\e[0m Starting Lock UI on TTY $LOCK_VT..."
     
     # openvt -w waits for the command to finish.
-    # We wrap in bash -c to ensure TERM is explicitly set for ncurses/tmatrix.
-    openvt -c "$LOCK_VT" -s -f -w -- /bin/bash -c "export TERM=linux; $LOCK_UI_SCRIPT"
+    # We use env to pass TERM explicitly to the project UI script.
+    openvt -c "$LOCK_VT" -s -f -w -- env TERM=linux "$LOCK_UI_SCRIPT"
     EXIT_CODE=$?
-
+    
     if [ $EXIT_CODE -eq 0 ]; then
         echo -e "\e[1;32m[ SUCCESS ]\e[0m Authentication verified."
         break
@@ -71,5 +71,11 @@ while true; do
 done
 
 # --- RESTORATION ---
+# CRITICAL: Kill the enforcement daemon BEFORE switching back, 
+# otherwise it might pull us back to the lock VT during the switch.
+[ -n "$STIKCY_PID" ] && kill "$STIKCY_PID" 2>/dev/null
+wait "$STIKCY_PID" 2>/dev/null
+
 echo -e "\e[1;32m[ UNLOCKED ]\e[0m Authenticated. Returning to VT $ORIG_VT."
 chvt "$ORIG_VT"
+exit 0
