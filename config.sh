@@ -20,22 +20,20 @@ SMART_MEDIA=true
 # playing audio is the SAME as the application inhibiting idle.
 MATCH_MEDIA_INHIBITOR=true
 
-# IGNORE INHIBITORS: List of app IDs whose inhibitors should be ignored
-# for media detection (e.g. general purpose caffeine extensions).
+# IGNORE INHIBITORS: List of app IDs whose inhibitors should be ignored.
 IGNORE_INHIBITORS="caffeine-gnome-extension"
 
 # IGNORE PHANTOM AUDIO: Some apps keep audio streams open while paused.
 ONLY_RUNNING_AUDIO=true
 
-# Grace period (seconds) after unlocking before the monitor resumes checking
-# This prevents immediate re-locking if the system hasn't registered activity yet.
+# Grace period (seconds) after unlocking before the monitor resumes checking.
 UNLOCK_GRACE_PERIOD=30
 
 # --- AUTHENTICATION SERVICES ---
-# The PAM service used for face verification (configured in /etc/pam.d/)
+# The PAM service used for face verification.
 PAM_SERVICE="faceauth"
 
-# THE PAM service used for password fallback (usually 'sudo' or 'login')
+# THE PAM service used for password fallback.
 SUDO_SERVICE="sudo"
 
 # --- DATA EXPORTERS ---
@@ -50,7 +48,7 @@ LOG_FILE="/var/log/howdy-wal.log"
 LOG_MAX_LINES=1000
 VERBOSE=true
 
-# Helper to truncate logs (keep last N lines)
+# Helper to truncate logs.
 cleanup_logs() {
     if [ -f "$LOG_FILE" ] && [ "$(wc -l < "$LOG_FILE")" -gt "$LOG_MAX_LINES" ]; then
         local tmp_log=$(mktemp)
