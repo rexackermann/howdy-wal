@@ -57,12 +57,6 @@ fi
 # 3. Directory Creation & File Transfer
 echo -e "\n${YELLOW}[ 2/6 ] Deploying to $INSTALL_DIR...${NC}"
 sudo mkdir -p "$INSTALL_DIR"
-sudo mkdir -p "$INSTALL_DIR/logs"
-sudo chmod 777 "$INSTALL_DIR/logs"
-
-# Ensure global cooldown file exists and is accessible
-touch "$LAST_UNLOCK_FILE" 2>/dev/null
-chmod 666 "$LAST_UNLOCK_FILE" 2>/dev/null
 
 echo "Copying scripts..."
 sudo cp "$SOURCE_DIR"/*.sh "$INSTALL_DIR/"
@@ -70,6 +64,7 @@ sudo cp "$SOURCE_DIR/faceauth" "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/howdy-WAL.service" "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/00-howdy-WAL" "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/lock_now.sh" "$INSTALL_DIR/"
+sudo cp "$SOURCE_DIR/bluetooth_reconnect.sh" "$INSTALL_DIR/"
 sudo cp "$SOURCE_DIR/LICENSE" "$INSTALL_DIR/"
 
 # Set permissions

@@ -15,6 +15,9 @@ else
     exit 1
 fi
 
+# Override log file to user home for visibility
+LOG_FILE="$HOME/howdy-wal.log"
+
 # --- IDLE DETECTION LOGIC ---
 # Intererrogates GNOME's Mutter IdleMonitor via D-Bus.
 get_idle_time() {
@@ -30,10 +33,8 @@ log_event() {
     local level="$1"
     local message="$2"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "[$timestamp] [$level] $message" >> "$LOG_FILE" 2>/dev/null
     echo -e "[$timestamp] [$level] $message"
-    if [ -w "$LOG_FILE" ]; then
-        echo "[$timestamp] [$level] $message" | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g" >> "$LOG_FILE"
-    fi
 }
 
 log_event "INFO" "Howdy-WAL Monitor starting up..."
@@ -46,27 +47,13 @@ while true; do
         continue
     fi
 
-    # 2. Global Cooldown Check
-    # If the user just unlocked, we wait for activity or a timeout.
-    if [ -f "$LAST_UNLOCK_FILE" ]; then
-        current_time=$(date +%s)
-        file_time=$(stat -c %Y "$LAST_UNLOCK_FILE")
-        age=$((current_time - file_time))
-        
-        if [ "$age" -lt "$UNLOCK_GRACE_PERIOD" ]; then
-            # Still in grace period.
-            sleep 5
-            continue
-        fi
-    fi
-
-    # 3. Smart Media Logic
+    # 2. Smart Media Logic
     if "$MEDIA_CHECK_SCRIPT"; then
         sleep 5
         continue
     fi
 
-    # 4. Get current system idle time (milliseconds)
+    # 3. Get current system idle time (milliseconds)
     IDLE_MS=$(get_idle_time)
     
     if [ -z "$IDLE_MS" ]; then
@@ -74,11 +61,12 @@ while true; do
         continue
     fi
 
-    # 5. Decision Logic
+    # 4. Decision Logic
     if [ "$IDLE_MS" -gt "$IDLE_THRESHOLD_MS" ]; then
         UI_SCRIPT_NAME=$(basename "$LOCK_UI_SCRIPT")
         
-        if ! pgrep -f "$UI_SCRIPT_NAME" >/dev/null; then
+        # Check if lock is currently active
+        if ! pgrep -f "$UI_SCRIPT_NAME" >/dev/null && ! pgrep -f "lock_screen.sh" >/dev/null; then
             log_event "TRIGGER" "Idle threshold reached ($IDLE_MS ms). Checking presence..."
             
             # Step 1: Quick verification
@@ -86,16 +74,9 @@ while true; do
                 log_event "LOCK" "User not detected. Initiating LOCKdown."
                 
                 # Step 2: Full Lock Screen
-                # Use systemd-inhibit to try and keep the session active during lock
-                systemd-inhibit --why="Howdy-WAL Lockscreen active" \
-                                --who="Howdy-WAL" \
-                                --mode=block \
-                                --what=idle:sleep:handle-lid-switch \
-                                "$LOCK_LAUNCHER_SCRIPT"
+                "$LOCK_LAUNCHER_SCRIPT"
                 
-                log_event "RESUME" "Session resumed. Entering grace period."
-                # Touch the cooldown file just in case it wasn't already
-                touch "$LAST_UNLOCK_FILE" 2>/dev/null
+                log_event "RESUME" "Session resumed. Entering grace period (${UNLOCK_GRACE_PERIOD}s)."
                 sleep "$UNLOCK_GRACE_PERIOD"
             else
                 log_event "INFO" "User is present. Skipping lock."

@@ -39,6 +39,11 @@ fi
 ORIG_VT=$(fgconsole)
 export TARGET_USER="${SUDO_USER:-$USER}"
 
+# Record Bluetooth state (run as target user to access their session)
+if [ -x "$BLUETOOTH_RECONNECT_SCRIPT" ]; then
+    sudo -u "$TARGET_USER" "$BLUETOOTH_RECONNECT_SCRIPT" save
+fi
+
 log_event "INFO" "Securing session for $TARGET_USER on TTY $LOCK_VT..."
 
 # --- ENFORCEMENT DAEMON ---
@@ -90,8 +95,13 @@ wait "$STIKCY_PID" 2>/dev/null
 log_event "SUCCESS" "Authentication verified. Returning to VT $ORIG_VT."
 chvt "$ORIG_VT"
 
-# Global cooldown notification for the monitor
-touch "$LAST_UNLOCK_FILE" 2>/dev/null
-chmod 666 "$LAST_UNLOCK_FILE" 2>/dev/null
+# Restore Bluetooth connections
+if [ -x "$BLUETOOTH_RECONNECT_SCRIPT" ]; then
+    sudo -u "$TARGET_USER" "$BLUETOOTH_RECONNECT_SCRIPT" restore
+fi
+
+# Reset GNOME idle timer to prevent immediate re-lock
+# This is a cleaner alternative to the global cooldown file.
+sudo -u "$TARGET_USER" dbus-send --type=method_call --dest=org.gnome.ScreenSaver /org/gnome/ScreenSaver org.gnome.ScreenSaver.SimulateUserActivity 2>/dev/null
 
 exit 0

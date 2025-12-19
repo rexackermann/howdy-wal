@@ -81,10 +81,7 @@ VISUAL_ENGINE_ARGS="-s 60 -C green"
 
 # --- INTERNAL PATHS ---
 # Usually these do not need modification once installed.
-LOG_DIR="$INSTALL_DIR/logs"
-LOG_FILE="$LOG_DIR/howdy-wal.log"
-
-LAST_UNLOCK_FILE="/tmp/howdy_last_unlock"
+LOG_FILE="/tmp/howdy-wal.log"
 
 LOCK_LAUNCHER_SCRIPT="$INSTALL_DIR/lock_screen.sh"
 LOCK_UI_SCRIPT="$INSTALL_DIR/lock_ui.sh"
@@ -92,5 +89,6 @@ HOWDY_WRAPPER_SCRIPT="$INSTALL_DIR/howdy_wrapper.sh"
 SCREEN_WATCHER_SCRIPT="$INSTALL_DIR/screen_watcher.sh"
 MEDIA_CHECK_SCRIPT="$INSTALL_DIR/media_check.sh"
 CAFFEINE_SCRIPT="$INSTALL_DIR/caffeine.sh"
+BLUETOOTH_RECONNECT_SCRIPT="$INSTALL_DIR/bluetooth_reconnect.sh"
 CONFIG_FILE="$INSTALL_DIR/config.sh"
 

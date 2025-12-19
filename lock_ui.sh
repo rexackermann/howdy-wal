@@ -100,7 +100,6 @@ while true; do
     
     if "$HOWDY_WRAPPER_SCRIPT"; then
         log_event "SUCCESS" "User verified via Howdy."
-        touch "$LAST_UNLOCK_FILE" 2>/dev/null
         exit 0
     fi
     
@@ -117,7 +116,6 @@ while true; do
         p|P)
             if attempt_password_auth; then
                 log_event "SUCCESS" "User verified via Password."
-                touch "$LAST_UNLOCK_FILE" 2>/dev/null
                 exit 0
             fi
             ;;
