@@ -24,8 +24,12 @@ MENU_TIMEOUT=10
 
 # --- TTY ENFORCEMENT ---
 # The Virtual Terminal used for the lock screen.
-# TTYs 1-6 are usually standard logins; 7 is usually the GUI.
 LOCK_VT=9
+
+# Emergency Recovery TTY.
+# If you switch to this VT, the Sticky TTY loop will NOT pull you back.
+# Use this for debugging or if you get stuck. Set to 0 to disable.
+EMERGENCY_VT=3
 
 # --- CAFFEINE MODE ---
 # Path to the trigger file that pauses auto-lock.

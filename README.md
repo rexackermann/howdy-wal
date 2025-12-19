@@ -24,8 +24,9 @@ A hardened, terminal-based biometric lockscreen for GNOME/Wayland. This project 
 ## ⚠️ Caution & Warnings
 
 > [!CAUTION]
-> **USE AT YOUR OWN RISK**: This script switches Virtual Terminals. While stable, if the `lock_ui.sh` script crashes or is terminated improperly, you might be stuck on a text console.
-> Keep a secondary TTY (`Ctrl+Alt+F3`) or SSH access available during your first test.
+> **USE AT YOUR OWN RISK**: This project uses a "Sticky TTY" enforcement loop. If you switch away from the lock screen, it will pull you back within 0.5s.
+> 
+> **For Recovery**: Use your **Emergency VT** (default: `Ctrl+Alt+F3`) to log in and kill the processes if you get stuck. Access to this specific TTY is allowed by the enforcement monitor for debugging.
 
 > [!WARNING]
 > **SUDOERS RISK**: The installer creates a `NOPASSWD` rule for the lock launcher. This is necessary to allow the background monitor to secure your system while you are away. Ensure your project directory permissions remain restricted to `root`.

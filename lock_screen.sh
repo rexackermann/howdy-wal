@@ -51,7 +51,8 @@ echo -e "\e[1;34m[ MONITORING ]\e[0m TTY Enforcement sequence active."
 
 while pgrep -f "$SCRIPT_NAME" > /dev/null; do
     CURRENT_VT=$(fgconsole)
-    if [ "$CURRENT_VT" != "$LOCK_VT" ]; then
+    # If VT is not the Lock VT AND not the Emergency VT, pull back.
+    if [ "$CURRENT_VT" != "$LOCK_VT" ] && [ "$CURRENT_VT" != "$EMERGENCY_VT" ]; then
         # Intrusion detected! Focus restoration in progress.
         chvt "$LOCK_VT"
     fi
