@@ -79,6 +79,19 @@ while true; do
     
     # 2. Wait for ANY key press OR visual engine termination
     # We use a non-blocking loop to avoid hanging if the engine crashes.
+    # We also monitor for touch/touchpad/mouse events via libinput.
+    
+    # Launch libinput monitor in background
+    # It waits for the first real interaction event (motion, click, touch, key).
+    (
+        libinput debug-events 2>/dev/null | grep -E "POINTER_|TOUCH_|KEYBOARD_KEY|GESTURE_" | read -r line
+        # When an event happens, kill the visual engine to trigger auth
+        if kill -0 "$VE_PID" 2>/dev/null; then
+            kill "$VE_PID" 2>/dev/null
+        fi
+    ) &
+    INPUT_PID=$!
+
     while kill -0 "$VE_PID" 2>/dev/null; do
         stty -echo -icanon
         if read -t 0.5 -n 1 -s choice; then
@@ -87,7 +100,11 @@ while true; do
     done
     stty echo icanon
     
-    # Kill the visual engine immediately
+    # Clean up input monitor if it's still running
+    kill "$INPUT_PID" 2>/dev/null
+    wait "$INPUT_PID" 2>/dev/null
+    
+    # Kill the visual engine if it's still running (e.g. if we broke out via 'read')
     kill "$VE_PID" 2>/dev/null
     wait "$VE_PID" 2>/dev/null
     

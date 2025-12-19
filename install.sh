@@ -122,7 +122,24 @@ else
     echo -e "  ${GREEN}✓${NC} Face verification successful."
 fi
 
-# 5. Sudoers Integration
+# 6. WirePlumber Bluetooth Persistence Policy
+echo -e "\n${YELLOW}[ 5/6 ] Configuring WirePlumber (BT persistence)...${NC}"
+WP_CONF_DIR="/etc/wireplumber/wireplumber.conf.d"
+if [ -f "$SOURCE_DIR/wp-bluetooth-persistence.conf" ]; then
+    sudo mkdir -p "$WP_CONF_DIR"
+    sudo cp "$SOURCE_DIR/wp-bluetooth-persistence.conf" "$WP_CONF_DIR/10-howdy-wal-bt.conf"
+    echo -e "  ${GREEN}✓${NC} WirePlumber policy deployed."
+    
+    # Reload WirePlumber for active users
+    if pgrep -x "wireplumber" >/dev/null; then
+        echo "  - Signaling WirePlumber reload..."
+        systemctl --user reload wireplumber 2>/dev/null || true
+    fi
+else
+    echo -e "  ${RED}Warning: WirePlumber policy file not found in source.${NC}"
+fi
+
+# 7. Sudoers Integration
 echo -e "\n${YELLOW}[ 4/6 ] Configuring Sudoers (passwordless lock)...${NC}"
 SUDOERS_TMP=$(mktemp)
 sed "s|@USER@|$CURRENT_USER|g; s|@PATH@|$INSTALL_DIR|g" "$INSTALL_DIR/00-howdy-WAL" > "$SUDOERS_TMP"

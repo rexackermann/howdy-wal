@@ -49,8 +49,16 @@ if [ -d "$EXT_DEST" ]; then
     echo -e "  ${GREEN}✓${NC} Extension removed."
 fi
 
-# 5. Delete Project Files
-echo -e "\n${YELLOW}[ 5/5 ] Deleting Installation Directory...${NC}"
+# 5. Remove WirePlumber Policy
+echo -e "\n${YELLOW}[ 5/6 ] Removing WirePlumber Policy...${NC}"
+WP_CONF="/etc/wireplumber/wireplumber.conf.d/10-howdy-wal-bt.conf"
+if [ -f "$WP_CONF" ]; then
+    sudo rm "$WP_CONF"
+    echo -e "  ${GREEN}✓${NC} WirePlumber policy removed."
+fi
+
+# 6. Delete Project Files
+echo -e "\n${YELLOW}[ 6/6 ] Deleting Installation Directory...${NC}"
 if [ -d "$INSTALL_DIR" ]; then
     sudo rm -rf "$INSTALL_DIR"
     echo -e "  ${GREEN}✓${NC} $INSTALL_DIR deleted."
