@@ -21,6 +21,9 @@ DBUS_DEST="org.gnome.Shell"
 DBUS_PATH="/org/gnome/Shell/Extensions/HowdyWalOverlay"
 DBUS_IFACE="org.gnome.Shell.Extensions.HowdyWalOverlay"
 
+# State Flags
+AUTH_IN_PROGRESS=false
+
 # --- LOGGING HELPER ---
 log_event() {
     local level="$1"
@@ -40,6 +43,9 @@ unlock_session() {
     exit 0
 }
 
+# ENSURE CLEAN EXIT: If script is killed, release the shield!
+trap unlock_session SIGINT SIGTERM EXIT
+
 # --- LOCK TRIGGER ---
 log_event "INFO" "Requesting GNOME Shell Overlay Lock..."
 SUCCESS=$(gdbus call --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" --method "$DBUS_IFACE.ShowLock")
@@ -57,7 +63,13 @@ gdbus monitor --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" | while r
     
     # 1. Handle Interaction (Wake)
     if echo "$line" | grep -q "InputDetected"; then
+        if [ "$AUTH_IN_PROGRESS" = true ]; then
+            continue # Already scanning or showing prompt
+        fi
+        
+        AUTH_IN_PROGRESS=true
         log_event "INFO" "Wake gesture detected. Triggering Face Check..."
+        
         if "$HOWDY_WRAPPER_SCRIPT"; then
             log_event "SUCCESS" "Face Verified."
             unlock_session
@@ -65,12 +77,14 @@ gdbus monitor --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" | while r
             log_event "WARN" "Face scan failed. Requesting Password Prompt..."
             gdbus call --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" --method "$DBUS_IFACE.ShowPasswordPrompt" > /dev/null
         fi
+        # Note: We stay in AUTH_IN_PROGRESS=true while password prompt is up
     fi
 
     # 2. Handle Password Submission
     if echo "$line" | grep -q "PasswordSubmitted"; then
-        # Extract password between quotes
+        # Extract password between single quotes 'pass'
         PASSWORD=$(echo "$line" | grep -oP "(?<=').*?(?=')")
+        
         log_event "DEBUG" "Password received. Verifying..."
         
         # Verify via Python PAM helper
@@ -80,7 +94,7 @@ gdbus monitor --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" | while r
         else
             log_event "ERROR" "Incorrect Password. Re-locking..."
             sleep 1
-            # Prompt again after a short delay
+            # Prompt again
             gdbus call --session --dest "$DBUS_DEST" --object-path "$DBUS_PATH" --method "$DBUS_IFACE.ShowPasswordPrompt" > /dev/null
         fi
     fi

@@ -1,2 +1,2 @@
-# Allow user to run the lock_screen.sh script as root without a password.
-@USER@ ALL=(ALL) NOPASSWD: @PATH@/lock_screen.sh
+# Allow user to run Howdy-WAL core scripts as root without a password.
+@USER@ ALL=(ALL) NOPASSWD: @PATH@/lock.sh, @PATH@/monitor.sh, @PATH@/howdy_wrapper.sh

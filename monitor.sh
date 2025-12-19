@@ -2,8 +2,8 @@
 ###############################################################################
 #             Howdy-WAL - System Idle Monitor Daemon (V2)                #
 # --------------------------------------------------------------------------- #
-# This background service watches for system idleness and triggers the        #
-# biometric verification and overlay lock for the current session.            #
+# This version is "Shield-Aware" and avoids overlapping with GNOME's native   #
+# lock screen.                                                                #
 ###############################################################################
 
 # Determine script location and load central configuration
@@ -15,13 +15,11 @@ else
     exit 1
 fi
 
-# Define paths if not in config
-MEDIA_CHECK_SCRIPT="${MEDIA_CHECK_SCRIPT:-$INSTALL_DIR/media_check.sh}"
-CAFFEINE_SCRIPT="${CAFFEINE_SCRIPT:-$INSTALL_DIR/caffeine.sh}"
-CAFFEINE_FILE="${CAFFEINE_FILE:-/tmp/howdy_caffeine}"
-LOCK_SCRIPT="${LOCK_SCRIPT:-$INSTALL_DIR/lock.sh}"
+# Paths
+LOCK_SCRIPT="$INSTALL_DIR/lock.sh"
+MEDIA_CHECK_SCRIPT="$INSTALL_DIR/media_check.sh"
 
-# --- IDLE DETECTION LOGIC ---
+# --- HELPERS ---
 get_idle_time() {
     gdbus call --session \
                --dest org.gnome.Mutter.IdleMonitor \
@@ -30,18 +28,26 @@ get_idle_time() {
                | awk -F' ' '{print $2}' | tr -cd '0-9'
 }
 
-# --- LOGGING HELPER ---
+is_native_lock_active() {
+    # Check if GNOME's native ScreenShield is currently active
+    local status
+    status=$(gdbus call --session --dest org.gnome.ScreenSaver --object-path /org/gnome/ScreenSaver --method org.gnome.ScreenSaver.GetActive 2>/dev/null)
+    if [[ "$status" == "(true,)" ]]; then
+        return 0
+    fi
+    return 1
+}
+
 log_event() {
     local level="$1"
     local message="$2"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
     echo "[$timestamp] [$level] $message" >> "$LOG_FILE" 2>/dev/null
-    echo -e "[$timestamp] [$level] $message"
+    [ "$VERBOSE" = true ] && echo -e "[$timestamp] [$level] $message"
 }
 
 cleanup_logs
-log_event "INFO" "Howdy-WAL V2 Monitor starting up..."
+log_event "INFO" "Howdy-WAL Shield-Aware Monitor started."
 
 while true; do
     # 1. Caffeine Check
@@ -50,38 +56,46 @@ while true; do
         continue
     fi
 
-    # 2. Smart Media Logic
-    if [ -f "$MEDIA_CHECK_SCRIPT" ]; then
+    # 2. Native ScreenShield Check
+    # If the system is already locked by GDM/GNOME, don't overlap.
+    if is_native_lock_active; then
+        sleep 10
+        continue
+    fi
+
+    # 3. Smart Media Logic
+    if [ "$SMART_MEDIA" = true ] && [ -f "$MEDIA_CHECK_SCRIPT" ]; then
         if "$MEDIA_CHECK_SCRIPT"; then
             sleep 5
             continue
         fi
     fi
 
-    # 3. Get Idle Time
+    # 4. Idle Check
     IDLE_MS=$(get_idle_time)
     if [ -z "$IDLE_MS" ]; then
         sleep 5
         continue
     fi
 
-    # 4. Trigger Lock
+    # 5. Lock Decision
     if [ "$IDLE_MS" -gt "$IDLE_THRESHOLD_MS" ]; then
-        # Check if lock is already running
-        if ! pgrep -f "$(basename "$LOCK_SCRIPT")" >/dev/null; then
-            log_event "TRIGGER" "Idle threshold reached ($IDLE_MS ms). Checking presence..."
+        # Precise process check
+        if ! pgrep -x "lock.sh" >/dev/null; then
+            log_event "TRIGGER" "Idle limit reached ($IDLE_MS ms)."
             
-            if ! "$HOWDY_WRAPPER_SCRIPT"; then
-                log_event "LOCK" "User not detected. Locking session."
+            # Pre-lock check: Is the user still there?
+            if ! "$HOWDY_WRAPPER_SCRIPT" >/dev/null 2>&1; then
+                log_event "LOCK" "User absent. Activating Overlay."
                 "$LOCK_SCRIPT"
-                log_event "RESUME" "Session resumed. Grace period ($UNLOCK_GRACE_PERIOD s)."
+                log_event "RESUME" "Unlocked. Grace period ($UNLOCK_GRACE_PERIOD s)."
                 sleep "$UNLOCK_GRACE_PERIOD"
             else
-                log_event "INFO" "User detected. Skipping lock."
-                sleep 5
+                log_event "INFO" "User present at desk. Extending idle..."
+                sleep 30
             fi
         fi
     fi
 
-    sleep 1
+    sleep 2
 done

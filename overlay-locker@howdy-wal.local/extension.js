@@ -27,6 +27,7 @@ export default class HowdyWalOverlayExtension {
     enable() {
         this._overlay = null;
         this._entry = null;
+        this._statusLabel = null;
         this._isLocked = false;
         this._escapeCount = 0;
         this._lastEscapeTime = 0;
@@ -46,16 +47,19 @@ export default class HowdyWalOverlayExtension {
     ShowLock() {
         if (this._isLocked) return true;
 
+        // Create the full-screen overlay (covers all monitors bounding box)
         this._overlay = new St.Widget({
             name: 'howdy-wal-overlay',
             style: 'background-color: #000000;',
             reactive: true,
             can_focus: true,
+            x: 0,
+            y: 0,
+            width: global.screen_width,
+            height: global.screen_height,
         });
 
-        this._overlay.set_position(0, 0);
-        this._overlay.set_size(global.screen_width, global.screen_height);
-
+        // Add to the highest possible layer in Shell UI
         Main.layoutManager.addChrome(this._overlay, {
             affectsInputRegion: true,
             trackFullscreen: true,
@@ -64,6 +68,7 @@ export default class HowdyWalOverlayExtension {
         if (Main.pushModal(this._overlay)) {
             this._isLocked = true;
             this._setupInputMonitoring();
+            this._createStatusLabel();
             return true;
         } else {
             this._cleanup();
@@ -71,12 +76,48 @@ export default class HowdyWalOverlayExtension {
         }
     }
 
+    _createStatusLabel() {
+        this._statusLabel = new St.Label({
+            text: 'HOWDY-WAL SECURED',
+            style: 'font-family: monospace; font-size: 14px; color: #004400;',
+            opacity: 100,
+        });
+
+        // Place in bottom right of primary monitor
+        let monitor = Main.layoutManager.primaryMonitor;
+        this._statusLabel.set_position(
+            monitor.x + monitor.width - 200,
+            monitor.y + monitor.height - 30
+        );
+
+        this._overlay.add_child(this._statusLabel);
+    }
+
+    _showScanning() {
+        if (!this._statusLabel) return;
+        this._statusLabel.set_text('SCANNING FACE...');
+        this._statusLabel.set_style('font-family: monospace; font-size: 20px; color: #00FF00; font-weight: bold;');
+
+        // Center for visibility during scan
+        let monitor = Main.layoutManager.primaryMonitor;
+        this._statusLabel.set_position(
+            monitor.x + (monitor.width - this._statusLabel.width) / 2,
+            monitor.y + monitor.height - 100
+        );
+    }
+
     ShowPasswordPrompt() {
         if (!this._isLocked || this._entry) return false;
 
+        // Update status
+        if (this._statusLabel) {
+            this._statusLabel.set_text('FACE UNKNOWN. ENTER PASSWORD:');
+            this._statusLabel.set_style('font-family: monospace; font-size: 16px; color: #FF0000;');
+        }
+
         this._entry = new St.Entry({
             style: 'font-size: 24px; padding: 10px; width: 400px; color: #00FF00; background-color: #111; border: 2px solid #00FF00; border-radius: 5px;',
-            hint_text: 'Enter Password...',
+            hint_text: 'Password...',
             can_focus: true,
         });
 
@@ -92,8 +133,7 @@ export default class HowdyWalOverlayExtension {
         this._entry.clutter_text.connect('activate', () => {
             let password = this._entry.get_text();
             this._dbusImpl.emit_signal('PasswordSubmitted', GLib.Variant.new('(s)', [password]));
-            this._entry.destroy();
-            this._entry = null;
+            this._entry.set_text(''); // Clear for security
         });
 
         return true;
@@ -131,6 +171,7 @@ export default class HowdyWalOverlayExtension {
                 type === Clutter.EventType.BUTTON_PRESS ||
                 type === Clutter.EventType.TOUCH_BEGIN) {
 
+                this._showScanning();
                 this._dbusImpl.emit_signal('InputDetected', null);
             }
             return Clutter.EVENT_STOP;
@@ -145,6 +186,10 @@ export default class HowdyWalOverlayExtension {
             if (this._entry) {
                 this._entry.destroy();
                 this._entry = null;
+            }
+            if (this._statusLabel) {
+                this._statusLabel.destroy();
+                this._statusLabel = null;
             }
             Main.layoutManager.removeChrome(this._overlay);
             this._overlay.destroy();
