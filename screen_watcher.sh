@@ -25,64 +25,6 @@ get_idle_time() {
                | awk -F' ' '{print $2}' | tr -cd '0-9'
 }
 
-# --- MEDIA DETECTION LOGIC ---
-
-# Returns a space-separated list of application names playing audio
-get_audio_apps() {
-    pactl list sink-inputs 2>/dev/null | grep "application.name =" | cut -d'"' -f2 | tr '\n' ' '
-}
-
-# Returns a space-separated list of application IDs inhibiting idle
-get_inhibitor_apps() {
-    local paths apps app
-    paths=$(gdbus call --session --dest org.gnome.SessionManager --object-path /org/gnome/SessionManager --method org.gnome.SessionManager.GetInhibitors | grep -o "'/[^']*'")
-    apps=""
-    for path in $paths; do
-        path=${path//\'/}
-        app=$(gdbus call --session --dest org.gnome.SessionManager --object-path "$path" --method org.gnome.SessionManager.Inhibitor.GetAppId 2>/dev/null | cut -d"'" -f2)
-        [ -n "$app" ] && apps="$apps $app"
-    done
-    echo "$apps"
-}
-
-is_foreground_media() {
-    local audio_apps inhibitor_apps
-    
-    # 1. Quick check for running audio
-    if [ "$ONLY_RUNNING_AUDIO" = true ]; then
-        if ! pactl list sink-inputs 2>/dev/null | grep -q "state: RUNNING"; then
-            return 1 # No running audio
-        fi
-    else
-        if ! pactl list sink-inputs 2>/dev/null | grep -q "sink-input"; then
-            return 1 # No audio at all
-        fi
-    fi
-
-    # 2. Check inhibitors
-    audio_apps=$(get_audio_apps | tr '[:upper:]' '[:lower:]')
-    inhibitor_apps=$(get_inhibitor_apps | tr '[:upper:]' '[:lower:]')
-
-    # If matching is required, we look for an intersection
-    if [ "$MATCH_MEDIA_INHIBITOR" = true ]; then
-        for app in $audio_apps; do
-            # Simple substring match for common app names
-            if echo "$inhibitor_apps" | grep -q "$app"; then
-                return 0 # Match found! (App playing audio is also inhibiting)
-            fi
-        done
-        return 1 # No match found
-    else
-        # Standard logic: Is there ANY inhibitor that isn't on the ignore list?
-        for app in $inhibitor_apps; do
-            if ! echo "$IGNORE_INHIBITORS" | grep -q "$app"; then
-                return 0 # Unignored inhibitor detected
-            fi
-        done
-        return 1
-    fi
-}
-
 echo -e "\e[1;36m[ DAEMON ]\e[0m Howdy-WAL Monitor starting up..."
 
 # --- MAIN MONITORING LOOP ---
@@ -94,13 +36,12 @@ while true; do
     fi
 
     # 2. Smart Media Logic
-    if [ "$SMART_MEDIA" = true ]; then
-        if is_foreground_media; then
-            # Media is in foreground (Audio matches Inhibitor)
-            # OR Standard inhibitor detected (if matching disabled)
-            sleep 5
-            continue
-        fi
+    # Calls the external module to decide if media should block locking
+    if "$MEDIA_CHECK_SCRIPT"; then
+        # Media check returned 0 -> BLOCK LOCK (Skip idle check)
+        # echo "Foreground media detected. Skipping idle check..."
+        sleep 5
+        continue
     fi
 
     # 3. Get current system idle time (milliseconds)
